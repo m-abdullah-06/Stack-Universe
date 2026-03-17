@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="80" alt="GitHub Logo" />
+  <img src="src/app/icon.png" width="80" alt="Stack Universe Logo" />
   <h1>🌌 Stack Universe</h1>
   <p><strong>Every developer has a universe. Let's explore yours.</strong></p>
   <p>
