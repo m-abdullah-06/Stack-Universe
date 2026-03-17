@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #000008;
+  --color-deep: #00000f;
+  --color-cyan: #00e5ff;
+  --color-cyan-dim: #00e5ff33;
+  --color-magenta: #ff006e;
+  --color-magenta-dim: #ff006e33;
+  --color-gold: #ffd700;
+  --color-purple: #7b2fff;
+  --color-dim: #0a0a1a;
+  --color-text: #e0f4ff;
+  --color-text-dim: #4a6a7a;
+  --glow-cyan: 0 0 10px #00e5ff80, 0 0 20px #00e5ff40, 0 0 40px #00e5ff20;
+  --glow-magenta: 0 0 10px #ff006e80, 0 0 20px #ff006e40;
+  --glow-gold: 0 0 10px #ffd70080, 0 0 20px #ffd70040;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Futuristic scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-cyan-dim);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-cyan);
+}
+
+/* Custom cursor */
+* {
+  cursor: crosshair;
+}
+button, a, [role="button"] {
+  cursor: pointer;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-cyan-dim);
+  color: var(--color-cyan);
+}
+
+/* Scanline overlay effect */
+.scanlines::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Grid overlay */
+.grid-overlay {
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Glow utilities */
+.glow-cyan {
+  box-shadow: var(--glow-cyan);
+}
+.glow-magenta {
+  box-shadow: var(--glow-magenta);
+}
+.text-glow-cyan {
+  text-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff80;
+}
+.text-glow-magenta {
+  text-shadow: 0 0 10px #ff006e, 0 0 20px #ff006e80;
+}
+.text-glow-gold {
+  text-shadow: 0 0 10px #ffd700, 0 0 20px #ffd70080;
+}
+
+/* HUD panel base */
+.hud-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 229, 255, 0.05),
+    rgba(0, 0, 15, 0.9)
+  );
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.hud-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
+}
+
+/* Corner decoration for HUD panels */
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1px solid var(--color-cyan);
+  border-right: 1px solid var(--color-cyan);
+}
+
+/* Cinematic text effect */
+.cinematic-text {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--color-cyan);
+  text-shadow: var(--glow-cyan);
+  letter-spacing: 0.1em;
+}
+
+/* Planet tooltip */
+.planet-tooltip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: rgba(0, 0, 15, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--color-text);
+  padding: 8px 12px;
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+/* Shooting star commit tooltip */
+.commit-tooltip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  background: rgba(0, 0, 15, 0.95);
+  border: 1px solid rgba(255, 0, 110, 0.4);
+  color: var(--color-magenta);
+  padding: 6px 10px;
+  border-radius: 4px;
+  max-width: 200px;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 0 15px rgba(255, 0, 110, 0.2);
+  line-height: 1.4;
+}
+
+/* Warp lines animation */
+@keyframes warpLine {
+  0% {
+    transform: scaleX(0) translateX(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(30) translateX(0);
+    opacity: 0;
+  }
+}
+
+.warp-line {
+  animation: warpLine 0.6s ease-in forwards;
+}
+
+/* Typewriter cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-start infinite;
+  color: var(--color-cyan);
+}
