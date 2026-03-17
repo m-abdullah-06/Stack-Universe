@@ -17,7 +17,7 @@
 **Stack Universe** is a 3D, WebGL-powered visualization tool that instantly transforms any GitHub developer's profile into an interactive, stunning solar system. It turns your life's work as a coder into a literal universe you can fly through, share, and show off.
 
 <div align="center">
-  *(Drop a beautiful screenshot or GIF of the app here!)*
+
 </div>
 
 ## 🚀 How It Works
