@@ -13,6 +13,9 @@ export const metadata: Metadata = {
     description: 'Your GitHub profile as a solar system',
     type: 'website',
   },
+  verification: {
+    google: 'J0HjDfdCbV9fjHZCfziwLaLasyWpiz548jBxFKn9lw8',
+  },
 }
 
 export default function RootLayout({
