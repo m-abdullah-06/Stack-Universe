@@ -227,9 +227,9 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
   const extraColors  = data.languages.slice(1, 5).map(l => l.color)
 
   const monthsInactive = useMemo(() => {
-    const lastPush = data.repos[0]?.pushed_at ?? data.user.created_at
+    const lastPush = data.lastCommitDate || data.repos[0]?.pushed_at || data.user.created_at
     return Math.floor((Date.now() - new Date(lastPush).getTime()) / (1000 * 60 * 60 * 24 * 30))
-  }, [data.repos, data.user.created_at])
+  }, [data.lastCommitDate, data.repos, data.user.created_at])
 
   const nebulaType = useMemo(() => resolveNebulaType({
     totalStars:      data.totalStars,
@@ -237,12 +237,9 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
     languageCount:   data.languages.length,
     totalRepos:      data.repos.length,
     accountAgeYears: data.accountAgeYears,
-    hasStreak:       false,
-    isEmpty,
-  }), [data, monthsInactive, isEmpty])
+    isHighStreak:    data.isHighStreak,
+  }), [data, monthsInactive])
 
-  const nebulaSpread  = Math.max(25, Math.min(80, data.accountAgeYears * 12 + 20))
-  const nebulaDensity = Math.min(1, data.recentCommits.length / 15)
   const nebulaBadge   = NEBULA_LABELS[nebulaType] ?? NEBULA_LABELS.standard
 
   // ── Mode persistence ───────────────────────────────────────────────────────
@@ -343,10 +340,10 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
           {/* Procedural nebula — seeded by username, unique per developer */}
           <Nebula
             username={data.username}
-            primaryColor={primaryColor}
+            dominantLanguage={data.dominantLanguage}
             nebulaType={nebulaType}
-            spread={nebulaSpread}
-            density={nebulaDensity}
+            totalCommits={data.totalCommits}
+            accountAgeYears={data.accountAgeYears}
             extraColors={extraColors}
           />
 

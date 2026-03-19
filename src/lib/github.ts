@@ -152,6 +152,18 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
   const totalStars = repos.reduce((s, r) => s + r.stargazers_count, 0)
   const totalForks = repos.reduce((s, r) => s + r.forks_count, 0)
   const accountAgeYears = getAccountAgeYears(user.created_at)
+  
+  // Estimate total commits based on repo sizes and stargazers (heuristic)
+  // Each 100kb of "size" is roughly 10 commits, + base for repo count
+  const totalCommits = repos.reduce((s, r) => s + Math.floor(r.size / 10), 0) + (repos.length * 20)
+  
+  const lastCommitDate = recentCommits[0]?.date || languages[0]?.lastPushed || null
+  const daysSinceLastCommit = lastCommitDate ? getDaysSinceActivity(lastCommitDate) : 365
+  
+  // Heuristic for "high streak" - based on recent commits date range if we had more info, 
+  // but here we just check if active today/yesterday as a proxy for "streak in progress"
+  const isHighStreak = daysSinceLastCommit <= 2 && recentCommits.length >= 10
+  
   const universeScore = calculateUniverseScore(totalStars, repos.length, languages.length, accountAgeYears)
   const { lightYears, distanceLabel } = calculateDistance(universeScore)
 
@@ -169,5 +181,8 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     dominantLanguage: languages[0]?.name ?? null,
     accountAgeYears,
     repoLanguages,
+    totalCommits,
+    isHighStreak,
+    lastCommitDate,
   }
 }

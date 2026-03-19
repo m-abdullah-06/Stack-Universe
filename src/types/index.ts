@@ -85,6 +85,9 @@ export interface UniverseData {
   dominantLanguage: string | null
   accountAgeYears: number
   repoLanguages: Record<string, Record<string, number>>
+  totalCommits: number
+  isHighStreak: boolean
+  lastCommitDate: string | null
 }
 
 export interface StoredUniverse {

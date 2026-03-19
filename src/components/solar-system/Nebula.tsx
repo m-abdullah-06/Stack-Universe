@@ -21,20 +21,16 @@ export interface NebulaTypeOptions {
   languageCount: number
   totalRepos: number
   accountAgeYears: number
-  hasStreak: boolean
-  isEmpty: boolean
+  isHighStreak: boolean
 }
 
 export function resolveNebulaType(opts: NebulaTypeOptions): NebulaType {
-  if (opts.isEmpty) return 'protostellar'
-  if (opts.hasStreak) return 'supernova' // Specific check if passed
-
+  if (opts.isHighStreak) return 'supernova'
   if (opts.totalStars >= 10000) return 'emission'
   if (opts.languageCount >= 8) return 'reflection'
+  if (opts.monthsInactive > 6) return 'dark'
   if (opts.totalRepos >= 100) return 'planetary'
   if (opts.accountAgeYears < 1) return 'protostellar'
-
-  if (opts.monthsInactive > 6) return 'dark'
 
   return 'standard'
 }
@@ -591,31 +587,65 @@ export function PhantomPlanets() {
 // ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
 interface NebulaProps {
   username: string
-  primaryColor: string
+  dominantLanguage: string | null
   nebulaType: NebulaType
-  spread: number
-  density: number
+  totalCommits: number
+  accountAgeYears: number
   extraColors: string[]
 }
 
-export function Nebula({ username, primaryColor, nebulaType, spread, density, extraColors }: NebulaProps) {
+export function Nebula({ 
+  username, 
+  dominantLanguage, 
+  nebulaType, 
+  totalCommits, 
+  accountAgeYears, 
+  extraColors 
+}: NebulaProps) {
   const seed = usernameHash(username)
   const rand = useMemo(() => seededRandom(seed), [seed])
 
-  switch (nebulaType) {
-    case 'emission':
-      return <EmissionNebula color={primaryColor} rand={rand} />
-    case 'dark':
-      return <DarkNebula rand={rand} />
-    case 'reflection':
-      return <ReflectionNebula colors={extraColors} rand={rand} />
-    case 'planetary':
-      return <PlanetaryNebula color={primaryColor} rand={rand} />
-    case 'protostellar':
-      return <ProtostellarNebula color={primaryColor} rand={rand} />
-    case 'supernova':
-      return <SupernovaRemnant color={primaryColor} rand={rand} />
-    default:
-      return <StandardNebula color={primaryColor} rand={rand} />
+  // Stat-based size and density
+  // Size = total commit count (normalized)
+  const sizeMultiplier = Math.min(2.5, Math.max(0.8, totalCommits / 2000))
+  // Density = contribution frequency (commits per year)
+  const frequency = totalCommits / Math.max(1, accountAgeYears)
+  const densityMultiplier = Math.min(2.0, Math.max(0.5, frequency / 500))
+
+  // Language-based colors
+  const languageColorMap: Record<string, string> = {
+    'JavaScript': '#FFD700', // Golden
+    'TypeScript': '#FFD700', // Golden (treated as JS flavor)
+    'Python': '#9B30FF',     // Purple
+    'Rust': '#FF4500',       // Fiery Orange
+    'C++': '#FF4500',
+    'Go': '#00ADD8',
   }
+
+  const primaryColor = (dominantLanguage && languageColorMap[dominantLanguage]) || extraColors[0] || '#00e5ff'
+
+  return (
+    <group scale={sizeMultiplier}>
+      {/* Container for density adjustment - we could pass it down, 
+          but scaling points works well for visual density too. */}
+      {(() => {
+        switch (nebulaType) {
+          case 'emission':
+            return <EmissionNebula color={primaryColor} rand={rand} />
+          case 'dark':
+            return <DarkNebula rand={rand} />
+          case 'reflection':
+            return <ReflectionNebula colors={extraColors} rand={rand} />
+          case 'planetary':
+            return <PlanetaryNebula color={primaryColor} rand={rand} />
+          case 'protostellar':
+            return <ProtostellarNebula color={primaryColor} rand={rand} />
+          case 'supernova':
+            return <SupernovaRemnant color={primaryColor} rand={rand} />
+          default:
+            return <StandardNebula color={primaryColor} rand={rand} />
+        }
+      })()}
+    </group>
+  )
 }
