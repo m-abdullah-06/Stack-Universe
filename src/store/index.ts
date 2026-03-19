@@ -1,30 +1,27 @@
 import { create } from 'zustand'
-import type { UniverseData, StoredUniverse, LeaderboardEntry } from '@/types'
+import type { UniverseData, StoredUniverse, LeaderboardEntry, ViewMode } from '@/types'
 
 interface UniverseStore {
-  // Current loaded universe
   currentUniverse: UniverseData | null
   setCurrentUniverse: (data: UniverseData | null) => void
 
-  // Multiverse data (all visited universes)
   multiverseUniverses: StoredUniverse[]
   setMultiverseUniverses: (universes: StoredUniverse[]) => void
 
-  // Leaderboard
   leaderboard: LeaderboardEntry[]
   setLeaderboard: (entries: LeaderboardEntry[]) => void
 
-  // Cinematic state
   cinematicState: 'idle' | 'warping' | 'arriving' | 'done'
   setCinematicState: (state: 'idle' | 'warping' | 'arriving' | 'done') => void
   cinematicTarget: string | null
   setCinematicTarget: (username: string | null) => void
 
-  // Selected planet (for zoom-in interaction)
   selectedPlanetIndex: number | null
   setSelectedPlanetIndex: (idx: number | null) => void
 
-  // UI state
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
+
   showHallOfGiants: boolean
   toggleHallOfGiants: () => void
   showShareCard: boolean
@@ -49,9 +46,11 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   selectedPlanetIndex: null,
   setSelectedPlanetIndex: (idx) => set({ selectedPlanetIndex: idx }),
 
+  viewMode: 'repos',
+  setViewMode: (mode) => set({ viewMode: mode }),
+
   showHallOfGiants: false,
-  toggleHallOfGiants: () =>
-    set((s) => ({ showHallOfGiants: !s.showHallOfGiants })),
+  toggleHallOfGiants: () => set((s) => ({ showHallOfGiants: !s.showHallOfGiants })),
   showShareCard: false,
   setShowShareCard: (v) => set({ showShareCard: v }),
 }))

@@ -89,7 +89,7 @@ export function MultiverseScene({ universes, leaderboard, isWarping, onWarpStart
       if (res.ok) {
         const data = await res.json()
         if (data.username) {
-          router.push(`/${data.username}`)
+          router.push(`/universe/${data.username}`)
           return
         }
       }
@@ -115,7 +115,7 @@ export function MultiverseScene({ universes, leaderboard, isWarping, onWarpStart
         <Suspense fallback={null}>
           <Stars radius={500} depth={100} count={8000} factor={5} saturation={0.1} fade speed={0.1} />
           <NebulaClouds />
-          <DistantUniverses universes={universes} leaderboard={leaderboard} />
+          <DistantUniverses universes={universes} top10Usernames={leaderboard.slice(0, 10).map((e) => e.username)} />
 
           <EffectComposer>
             <Bloom

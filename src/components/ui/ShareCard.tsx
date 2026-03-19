@@ -1,54 +1,55 @@
-'use client'
+"use client";
 
-import { useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useUniverseStore } from '@/store'
-import type { UniverseData } from '@/types'
-import { formatLightYears } from '@/lib/universe-score'
+import { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useUniverseStore } from "@/store";
+import type { UniverseData } from "@/types";
+import { formatLightYears } from "@/lib/universe-score";
 
 interface ShareCardProps {
-  data: UniverseData
+  data: UniverseData;
 }
 
 export function ShareCard({ data }: ShareCardProps) {
-  const { showShareCard, setShowShareCard } = useUniverseStore()
-  const cardRef = useRef<HTMLDivElement>(null)
-  const [copied, setCopied] = useState(false)
-  const [downloading, setDownloading] = useState(false)
+  const { showShareCard, setShowShareCard } = useUniverseStore();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://stackuniverse.app'
-  const shareUrl = `${appUrl}/@${data.username}`
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://stack-universe.vercel.app";
+  const shareUrl = `${appUrl}/universe/${data.username}`;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const downloadCard = async () => {
-    if (!cardRef.current) return
-    setDownloading(true)
+    if (!cardRef.current) return;
+    setDownloading(true);
     try {
-      const { default: html2canvas } = await import('html2canvas')
+      const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#000008',
+        backgroundColor: "#000008",
         scale: 2,
         useCORS: true,
         logging: false,
-      })
-      const url = canvas.toDataURL('image/png')
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `stack-universe-${data.username}.png`
-      a.click()
+      });
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `stack-universe-${data.username}.png`;
+      a.click();
     } catch (err) {
-      console.error('Download failed', err)
+      console.error("Download failed", err);
     } finally {
-      setDownloading(false)
+      setDownloading(false);
     }
-  }
+  };
 
-  if (!showShareCard) return null
+  if (!showShareCard) return null;
 
   return (
     <AnimatePresence>
@@ -70,9 +71,11 @@ export function ShareCard({ data }: ShareCardProps) {
             ref={cardRef}
             className="w-96 p-6 rounded-lg relative overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #000008 0%, #00000f 50%, #050010 100%)',
-              border: '1px solid rgba(0,229,255,0.3)',
-              boxShadow: '0 0 40px rgba(0,229,255,0.1), inset 0 0 40px rgba(0,0,0,0.5)',
+              background:
+                "linear-gradient(135deg, #000008 0%, #00000f 50%, #050010 100%)",
+              border: "1px solid rgba(0,229,255,0.3)",
+              boxShadow:
+                "0 0 40px rgba(0,229,255,0.1), inset 0 0 40px rgba(0,0,0,0.5)",
             }}
           >
             {/* Grid background */}
@@ -80,8 +83,8 @@ export function ShareCard({ data }: ShareCardProps) {
               className="absolute inset-0 opacity-20"
               style={{
                 backgroundImage:
-                  'linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px)',
-                backgroundSize: '24px 24px',
+                  "linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px)",
+                backgroundSize: "24px 24px",
               }}
             />
 
@@ -100,7 +103,7 @@ export function ShareCard({ data }: ShareCardProps) {
                   src={data.user.avatar_url}
                   alt={data.username}
                   className="w-12 h-12 rounded-full border-2"
-                  style={{ borderColor: data.languages[0]?.color || '#00e5ff' }}
+                  style={{ borderColor: data.languages[0]?.color || "#00e5ff" }}
                   crossOrigin="anonymous"
                 />
               )}
@@ -109,16 +112,32 @@ export function ShareCard({ data }: ShareCardProps) {
             {/* Stats grid */}
             <div className="relative z-10 grid grid-cols-2 gap-3 mb-4">
               {[
-                { label: 'UNIVERSE SCORE', value: data.universeScore.toLocaleString(), color: '#00e5ff' },
-                { label: 'TOTAL STARS', value: `★ ${data.totalStars.toLocaleString()}`, color: '#ffd700' },
-                { label: 'PLANET COUNT', value: data.languages.length, color: data.languages[0]?.color || '#7b2fff' },
-                { label: 'REPOSITORIES', value: data.repos.length, color: '#ff006e' },
+                {
+                  label: "UNIVERSE SCORE",
+                  value: data.universeScore.toLocaleString(),
+                  color: "#00e5ff",
+                },
+                {
+                  label: "TOTAL STARS",
+                  value: `★ ${data.totalStars.toLocaleString()}`,
+                  color: "#ffd700",
+                },
+                {
+                  label: "PLANET COUNT",
+                  value: data.languages.length,
+                  color: data.languages[0]?.color || "#7b2fff",
+                },
+                {
+                  label: "REPOSITORIES",
+                  value: data.repos.length,
+                  color: "#ff006e",
+                },
               ].map(({ label, value, color }) => (
                 <div
                   key={label}
                   className="p-3 rounded"
                   style={{
-                    background: 'rgba(0,0,0,0.5)',
+                    background: "rgba(0,0,0,0.5)",
                     border: `1px solid ${color}22`,
                   }}
                 >
@@ -151,7 +170,9 @@ export function ShareCard({ data }: ShareCardProps) {
                     boxShadow: `0 0 8px ${data.languages[0].color}`,
                   }}
                 />
-                <span className="font-mono text-xs text-gray-400">Dominant planet:</span>
+                <span className="font-mono text-xs text-gray-400">
+                  Dominant planet:
+                </span>
                 <span
                   className="font-mono text-xs font-bold"
                   style={{ color: data.languages[0].color }}
@@ -166,7 +187,9 @@ export function ShareCard({ data }: ShareCardProps) {
 
             {/* Distance */}
             <div className="relative z-10 text-center mb-3">
-              <p className="font-mono text-xs text-gray-700 mb-0.5">DISTANCE FROM MULTIVERSE CORE</p>
+              <p className="font-mono text-xs text-gray-700 mb-0.5">
+                DISTANCE FROM MULTIVERSE CORE
+              </p>
               <p className="font-orbitron text-sm text-space-cyan">
                 {formatLightYears(data.lightYears)}
               </p>
@@ -178,9 +201,11 @@ export function ShareCard({ data }: ShareCardProps) {
             {/* Footer */}
             <div
               className="relative z-10 text-center pt-3"
-              style={{ borderTop: '1px solid rgba(0,229,255,0.1)' }}
+              style={{ borderTop: "1px solid rgba(0,229,255,0.1)" }}
             >
-              <p className="font-mono text-xs text-gray-700">Explore your universe at</p>
+              <p className="font-mono text-xs text-gray-700">
+                Explore your universe at
+              </p>
               <p className="font-mono text-xs text-space-cyan/60">{shareUrl}</p>
             </div>
 
@@ -197,14 +222,14 @@ export function ShareCard({ data }: ShareCardProps) {
               onClick={copyLink}
               className="hud-panel rounded px-5 py-2.5 font-mono text-xs text-space-cyan hover:bg-space-cyan/10 transition-colors tracking-wider"
             >
-              {copied ? '✓ COPIED!' : '⧉ COPY LINK'}
+              {copied ? "✓ COPIED!" : "⧉ COPY LINK"}
             </button>
             <button
               onClick={downloadCard}
               disabled={downloading}
               className="hud-panel rounded px-5 py-2.5 font-mono text-xs text-space-magenta hover:bg-space-magenta/10 transition-colors tracking-wider disabled:opacity-50"
             >
-              {downloading ? '...' : '↓ DOWNLOAD CARD'}
+              {downloading ? "..." : "↓ DOWNLOAD CARD"}
             </button>
             <button
               onClick={() => setShowShareCard(false)}
@@ -216,5 +241,5 @@ export function ShareCard({ data }: ShareCardProps) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  )
+  );
 }

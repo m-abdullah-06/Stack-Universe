@@ -97,8 +97,9 @@ export function HallOfGiants() {
               </div>
             ) : (
               leaderboard.map((entry: LeaderboardEntry, i) => (
-                <motion.button
+                <motion.a
                   key={entry.username}
+                  href={`/universe/${entry.username}`}
                   className="w-full grid grid-cols-12 gap-1 items-center py-1.5 px-2 rounded hover:bg-space-gold/5 transition-colors group text-left"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -128,7 +129,7 @@ export function HallOfGiants() {
                   <span className="col-span-3 text-right font-mono text-xs text-yellow-500">
                     ★{entry.total_stars.toLocaleString()}
                   </span>
-                </motion.button>
+                </motion.a>
               ))
             )}
           </div>

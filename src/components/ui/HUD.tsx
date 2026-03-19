@@ -78,9 +78,9 @@ export function HUD({ data }: HUDProps) {
       >
         <button
           onClick={() => router.push('/')}
-          className="hud-panel rounded px-4 py-2 font-mono text-xs text-space-cyan hover:bg-space-cyan/10 transition-colors tracking-wider"
+          className="font-mono text-[10px] text-space-cyan/40 hover:text-space-cyan transition-colors tracking-widest"
         >
-          ← MULTIVERSE
+          ← RETURN TO MULTIVERSE
         </button>
         <button
           onClick={() => setShowShareCard(true)}

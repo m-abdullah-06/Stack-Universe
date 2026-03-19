@@ -5,54 +5,59 @@ import { useFrame } from '@react-three/fiber'
 import { Sphere, Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { useRouter } from 'next/navigation'
-import type { StoredUniverse, LeaderboardEntry } from '@/types'
+import type { StoredUniverse } from '@/types'
 
 interface DistantUniverseOrbProps {
-  username: string
-  score: number
-  stars: number
-  repos: number
-  x: number
-  y: number
-  z: number
+  universe: StoredUniverse
   isTop10: boolean
-  isGrand: boolean
 }
 
-function DistantUniverseOrb({ username, score, stars, repos, x, y, z, isTop10, isGrand }: DistantUniverseOrbProps) {
+function DistantUniverseOrb({ universe, isTop10 }: DistantUniverseOrbProps) {
   const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const router = useRouter()
 
   // Determine size from score
   const size = useMemo(() => {
-    const base = isGrand ? 2.5 : (isTop10 ? 1.2 : 0.3)
-    const scoreBonus = Math.min(score / 100000, 1.5)
+    const base = isTop10 ? 1.2 : 0.3
+    const scoreBonus = Math.min(universe.universe_score / 100000, 1.5)
     return base + scoreBonus * 0.5
-  }, [isTop10, isGrand, score])
+  }, [isTop10, universe.universe_score])
 
   // Color based on dominant language (use a hash-based hue)
   const color = useMemo(() => {
-    if (isGrand) return '#ffd700' // Gold for grand stars
-    const h = (score * 137.508) % 360
+    const h = (universe.universe_score * 137.508) % 360
     return `hsl(${h}, 70%, 60%)`
-  }, [score, isGrand])
+  }, [universe.universe_score])
 
-  // Slow drift
-  const driftOffset = useMemo(() => Math.random() * 100, [])
+  // Soft nebula haze — a few particle puffs around each system
+  const nebulaPositions = useMemo(() => {
+    const arr = new Float32Array(40 * 3)
+    for (let i = 0; i < 40; i++) {
+      const r = size * (2 + Math.random() * 4)
+      const a = Math.random() * Math.PI * 2
+      const b = (Math.random() - 0.5) * 0.8
+      arr[i * 3]     = Math.cos(a) * Math.cos(b) * r
+      arr[i * 3 + 1] = Math.sin(b) * r * 0.4
+      arr[i * 3 + 2] = Math.sin(a) * Math.cos(b) * r
+    }
+    return arr
+  }, [size])
+
+  const driftOffset = useMemo(() => (universe.universe_score * 0.1) % (Math.PI * 2), [universe.universe_score])
 
   useFrame((state) => {
     if (!groupRef.current) return
     const t = state.clock.getElapsedTime()
     groupRef.current.position.y =
-      y + Math.sin(t * 0.2 + driftOffset) * 2
+      universe.position_y + Math.sin(t * 0.2 + driftOffset) * 2
     groupRef.current.rotation.y = t * 0.05
   })
 
   return (
     <group
       ref={groupRef}
-      position={[x, y, z]}
+      position={[universe.position_x, universe.position_y, universe.position_z]}
     >
       {/* Outer glow */}
       <Sphere args={[size * 3, 8, 8]}>
@@ -74,6 +79,22 @@ function DistantUniverseOrb({ username, score, stars, repos, x, y, z, isTop10, i
         />
       </Sphere>
 
+      {/* Soft nebula haze cloud around each system */}
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[nebulaPositions, 3]} />
+        </bufferGeometry>
+        <pointsMaterial
+          color={color}
+          size={isTop10 ? 0.5 : 0.25}
+          sizeAttenuation
+          transparent
+          opacity={hovered ? 0.35 : 0.12}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </points>
+
       {/* Main orb */}
       <Sphere
         args={[size, 16, 16]}
@@ -88,7 +109,7 @@ function DistantUniverseOrb({ username, score, stars, repos, x, y, z, isTop10, i
         }}
         onClick={(e) => {
           e.stopPropagation()
-          router.push(`/${username}`)
+          router.push(`/universe/${universe.username}`)
         }}
       >
         <meshStandardMaterial
@@ -120,13 +141,13 @@ function DistantUniverseOrb({ username, score, stars, repos, x, y, z, isTop10, i
         <Html center distanceFactor={20} style={{ pointerEvents: 'none', zIndex: 100 }}>
           <div className="planet-tooltip min-w-max text-center">
             <div className="font-orbitron font-bold text-sm mb-0.5" style={{ color }}>
-              @{username}
+              @{universe.username}
             </div>
             <div className="font-mono text-xs text-gray-400">
-              Score: {score.toLocaleString()}
+              Score: {universe.universe_score.toLocaleString()}
             </div>
             <div className="font-mono text-xs text-gray-600">
-              ★ {stars.toLocaleString()} · {repos} repos
+              ★ {universe.total_stars.toLocaleString()} · {universe.total_repos} repos
             </div>
             {isTop10 && (
               <div className="text-space-gold text-xs mt-1 font-bold">★ HALL OF GIANTS</div>
@@ -141,63 +162,18 @@ function DistantUniverseOrb({ username, score, stars, repos, x, y, z, isTop10, i
 
 interface DistantUniversesProps {
   universes: StoredUniverse[]
-  leaderboard: LeaderboardEntry[]
+  top10Usernames: string[]
 }
 
-export function DistantUniverses({ universes, leaderboard }: DistantUniversesProps) {
-  const top10Usernames = useMemo(() => leaderboard.map((l) => l.username), [leaderboard])
-
-  const combined = useMemo(() => {
-    const map = new Map<string, DistantUniverseOrbProps>()
-    
-    // 1. Add stored universes
-    universes.forEach((u) => {
-      map.set(u.username, {
-        username: u.username,
-        score: u.universe_score,
-        stars: u.total_stars,
-        repos: u.total_repos,
-        x: u.position_x,
-        y: u.position_y,
-        z: u.position_z,
-        isTop10: top10Usernames.includes(u.username),
-        isGrand: false,
-      })
-    })
-
-    // 2. Add leaderboard "giants" as very prominent stars if not already rendered
-    // If they exist, upgrade them to "Grand"
-    leaderboard.forEach((l, i) => {
-      if (map.has(l.username)) {
-        const existing = map.get(l.username)!
-        existing.isGrand = true
-        // Optionally push them further out or bring them closer so they stand out
-      } else {
-        // Compute a grand position: array of them in a halo
-        const angle = (i / leaderboard.length) * Math.PI * 2
-        // Make them prominently visible but far out
-        const radius = 60 + (i % 3) * 15
-        map.set(l.username, {
-          username: l.username,
-          score: l.universe_score,
-          stars: l.total_stars,
-          repos: l.total_repos,
-          x: Math.cos(angle) * radius,
-          y: Math.sin(angle * 3) * 10,
-          z: Math.sin(angle) * radius,
-          isTop10: true,
-          isGrand: true,
-        })
-      }
-    })
-
-    return Array.from(map.values())
-  }, [universes, leaderboard, top10Usernames])
-
+export function DistantUniverses({ universes, top10Usernames }: DistantUniversesProps) {
   return (
     <>
-      {combined.map((orb) => (
-        <DistantUniverseOrb key={orb.username} {...orb} />
+      {universes.map((u) => (
+        <DistantUniverseOrb
+          key={u.id || u.username}
+          universe={u}
+          isTop10={top10Usernames.includes(u.username)}
+        />
       ))}
     </>
   )

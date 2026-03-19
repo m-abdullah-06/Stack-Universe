@@ -30,18 +30,15 @@ function getHeaders(): HeadersInit {
 async function fetchGitHub<T>(path: string): Promise<T> {
   const res = await fetch(`${GITHUB_API}${path}`, {
     headers: getHeaders(),
-    next: { revalidate: 300 }, // 5 min cache
+    next: { revalidate: 300 },
   })
-
   if (res.status === 404) throw new Error('USER_NOT_FOUND')
   if (res.status === 403) throw new Error('RATE_LIMITED')
   if (!res.ok) throw new Error(`GitHub API error: ${res.status}`)
-
   return res.json()
 }
 
 export async function fetchUniverseData(username: string): Promise<UniverseData> {
-  // Fetch user, repos, and events in parallel
   const [user, repos, events] = await Promise.all([
     fetchGitHub<GitHubUser>(`/users/${username}`),
     fetchGitHub<GitHubRepo[]>(
@@ -53,10 +50,7 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
   ])
 
   // --- Language aggregation ---
-  const langMap: Record<
-    string,
-    { bytes: number; repos: GitHubRepo[]; lastPushed: string }
-  > = {}
+  const langMap: Record<string, { bytes: number; repos: GitHubRepo[]; lastPushed: string }> = {}
 
   for (const repo of repos) {
     if (!repo.fork && repo.language) {
@@ -79,16 +73,32 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
       bytes: data.bytes,
       percentage: totalLangBytes > 0 ? (data.bytes / totalLangBytes) * 100 : 0,
       color: getLanguageColor(name),
-      repos: data.repos
-        .sort((a, b) => b.stargazers_count - a.stargazers_count)
-        .slice(0, 6),
+      repos: data.repos.sort((a, b) => b.stargazers_count - a.stargazers_count).slice(0, 6),
       lastPushed: data.lastPushed,
       daysSinceActivity: getDaysSinceActivity(data.lastPushed),
     }))
     .sort((a, b) => b.bytes - a.bytes)
-    .slice(0, 12) // max 12 planets
+    .slice(0, 12)
 
-  // --- Commit extraction from events ---
+  // --- Fetch language breakdown for top 5 repos (language moons) ---
+  const top5 = [...repos]
+    .filter(r => !r.fork)
+    .sort((a, b) => b.stargazers_count - a.stargazers_count)
+    .slice(0, 5)
+
+  const langResults = await Promise.allSettled(
+    top5.map(r =>
+      fetchGitHub<Record<string, number>>(`/repos/${username}/${r.name}/languages`)
+    )
+  )
+
+  const repoLanguages: Record<string, Record<string, number>> = {}
+  top5.forEach((r, i) => {
+    const result = langResults[i]
+    if (result.status === 'fulfilled') repoLanguages[r.name] = result.value
+  })
+
+  // --- Commit extraction ---
   const recentCommits: CommitData[] = []
   for (const event of events) {
     if (event.type === 'PushEvent' && event.payload.commits) {
@@ -105,8 +115,6 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     if (recentCommits.length >= 15) break
   }
 
-  // If events API returned nothing (user has only private repos or no recent activity),
-  // pull commits directly from the 3 most recently-pushed public repos
   if (recentCommits.length === 0) {
     const recentPublicRepos = repos
       .filter(r => !r.fork)
@@ -144,12 +152,7 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
   const totalStars = repos.reduce((s, r) => s + r.stargazers_count, 0)
   const totalForks = repos.reduce((s, r) => s + r.forks_count, 0)
   const accountAgeYears = getAccountAgeYears(user.created_at)
-  const universeScore = calculateUniverseScore(
-    totalStars,
-    repos.length,
-    languages.length,
-    accountAgeYears
-  )
+  const universeScore = calculateUniverseScore(totalStars, repos.length, languages.length, accountAgeYears)
   const { lightYears, distanceLabel } = calculateDistance(universeScore)
 
   return {
@@ -165,5 +168,6 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     distanceLabel,
     dominantLanguage: languages[0]?.name ?? null,
     accountAgeYears,
+    repoLanguages,
   }
 }

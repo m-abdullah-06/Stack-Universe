@@ -1,3 +1,9 @@
+export type ViewMode = 'repos' | 'langs'
+
+export type StarType = 'dwarf' | 'yellow' | 'subgiant' | 'giant' | 'supergiant' | 'hypergiant'
+
+export type RepoTier = 1 | 2 | 3 | 4
+
 export interface GitHubUser {
   login: string
   name: string | null
@@ -34,10 +40,7 @@ export interface GitHubEvent {
   type: string
   repo: { name: string }
   payload: {
-    commits?: Array<{
-      sha: string
-      message: string
-    }>
+    commits?: Array<{ sha: string; message: string }>
     ref?: string
   }
   created_at: string
@@ -81,6 +84,7 @@ export interface UniverseData {
   distanceLabel: string
   dominantLanguage: string | null
   accountAgeYears: number
+  repoLanguages: Record<string, Record<string, number>>
 }
 
 export interface StoredUniverse {

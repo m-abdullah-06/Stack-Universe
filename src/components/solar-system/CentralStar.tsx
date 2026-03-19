@@ -4,115 +4,154 @@ import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sphere, MeshDistortMaterial } from '@react-three/drei'
 import * as THREE from 'three'
-import type { GitHubUser } from '@/types'
+import type { StarType } from '@/types'
 
 interface CentralStarProps {
-  user: GitHubUser
   score: number
-  totalStars: number
   totalRepos: number
+  totalStars: number
   onClick: () => void
 }
 
-export function CentralStar({ score, onClick }: CentralStarProps) {
-  const meshRef = useRef<THREE.Mesh>(null)
+function getStarType(totalRepos: number): StarType {
+  if (totalRepos >= 250) return 'hypergiant'
+  if (totalRepos >= 121) return 'supergiant'
+  if (totalRepos >= 61)  return 'giant'
+  if (totalRepos >= 31)  return 'subgiant'
+  if (totalRepos >= 11)  return 'yellow'
+  return 'dwarf'
+}
+
+const STAR_CONFIG: Record<StarType, { color: string; coronaColor: string; intensity: number }> = {
+  dwarf:      { color: '#ff7733', coronaColor: '#ff5500', intensity: 0.8 },
+  yellow:     { color: '#ffdd88', coronaColor: '#ffaa44', intensity: 1.0 },
+  subgiant:   { color: '#fff5cc', coronaColor: '#ffdd88', intensity: 1.2 },
+  giant:      { color: '#ffffff', coronaColor: '#cce8ff', intensity: 1.5 },
+  supergiant: { color: '#cce0ff', coronaColor: '#99bbff', intensity: 1.8 },
+  hypergiant: { color: '#ffffff', coronaColor: '#ff99ff', intensity: 2.2 },
+}
+
+function ParticleStreams({ color, count = 120 }: { color: string; count?: number }) {
+  const ref = useRef<THREE.Points>(null)
+  const positions = useMemo(() => {
+    const arr = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      const r     = 3 + Math.random() * 5
+      const theta = Math.random() * Math.PI * 2
+      const phi   = (Math.random() - 0.5) * 0.6
+      arr[i * 3]     = Math.cos(theta) * Math.cos(phi) * r
+      arr[i * 3 + 1] = Math.sin(phi) * r
+      arr[i * 3 + 2] = Math.sin(theta) * Math.cos(phi) * r
+    }
+    return arr
+  }, [count])
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = state.clock.getElapsedTime() * 0.08
+  })
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial color={color} size={0.06} sizeAttenuation transparent opacity={0.6} />
+    </points>
+  )
+}
+
+export function CentralStar({ score, totalRepos, totalStars, onClick }: CentralStarProps) {
+  const meshRef   = useRef<THREE.Mesh>(null)
   const coronaRef = useRef<THREE.Mesh>(null)
-  const glowRef = useRef<THREE.Mesh>(null)
+  const glowRef   = useRef<THREE.Mesh>(null)
+  const ringRef1  = useRef<THREE.Mesh>(null)
+  const ringRef2  = useRef<THREE.Mesh>(null)
 
-  // Star size based on score (1.2 to 3.5)
+  const starType = getStarType(totalRepos)
+  const cfg      = STAR_CONFIG[starType]
+  const isHyper  = starType === 'hypergiant'
+
   const starSize = useMemo(() => {
-    return Math.max(1.2, Math.min(3.5, 1.2 + (score / 10000) * 2.3))
-  }, [score])
-
-  // Star color based on score tier
-  const starColor = useMemo(() => {
-    if (score > 50000) return '#fff5e0' // blue-white giant
-    if (score > 10000) return '#ffffcc' // yellow-white
-    if (score > 2000) return '#ffdd88' // yellow
-    if (score > 500) return '#ffaa44' // orange
-    return '#ff7733' // red dwarf
-  }, [score])
+    return Math.max(1.2, Math.min(4.5,
+      1.2 +
+      Math.log10(totalRepos + 1) * 0.4 +
+      Math.log10(totalStars + 1) * 0.3
+    ))
+  }, [totalRepos, totalStars])
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime()
     if (meshRef.current) {
-      meshRef.current.rotation.y = t * 0.05
-      meshRef.current.rotation.x = Math.sin(t * 0.1) * 0.05
+      meshRef.current.rotation.y = t * 0.04
+      meshRef.current.rotation.x = Math.sin(t * 0.08) * 0.04
     }
     if (coronaRef.current) {
-      coronaRef.current.rotation.z = -t * 0.03
-      coronaRef.current.rotation.y = t * 0.02
-      const pulse = 1 + Math.sin(t * 1.5) * 0.04
-      coronaRef.current.scale.setScalar(pulse)
+      coronaRef.current.rotation.z = -t * 0.025
+      coronaRef.current.scale.setScalar(1 + Math.sin(t * 1.5) * 0.04)
     }
     if (glowRef.current) {
-      const pulse2 = 1 + Math.sin(t * 0.8 + 1) * 0.06
-      glowRef.current.scale.setScalar(pulse2)
+      glowRef.current.scale.setScalar(1 + Math.sin(t * 0.7 + 1) * 0.06)
     }
+    if (ringRef1.current) ringRef1.current.rotation.z = t * 0.06
+    if (ringRef2.current) ringRef2.current.rotation.z = -t * 0.04
   })
 
   return (
     <group onClick={onClick}>
-      {/* Outer glow sphere */}
-      <Sphere ref={glowRef} args={[starSize * 2.5, 32, 32]}>
-        <meshBasicMaterial
-          color={starColor}
-          transparent
-          opacity={0.04}
-          side={THREE.BackSide}
-        />
+      {/* Outer glow */}
+      <Sphere ref={glowRef} args={[starSize * 2.8, 32, 32]}>
+        <meshBasicMaterial color={cfg.color} transparent opacity={0.04} side={THREE.BackSide} />
       </Sphere>
 
       {/* Mid glow */}
-      <Sphere args={[starSize * 1.8, 32, 32]}>
-        <meshBasicMaterial
-          color={starColor}
-          transparent
-          opacity={0.08}
-          side={THREE.BackSide}
-        />
+      <Sphere args={[starSize * 2.0, 32, 32]}>
+        <meshBasicMaterial color={cfg.coronaColor} transparent opacity={0.07} side={THREE.BackSide} />
       </Sphere>
 
+      {/* Glow rings — giant+ */}
+      {(starType === 'giant' || starType === 'supergiant' || isHyper) && (
+        <>
+          <mesh ref={ringRef1} rotation={[Math.PI / 2.5, 0, 0]}>
+            <torusGeometry args={[starSize * 1.7, 0.06, 8, 64]} />
+            <meshBasicMaterial color={cfg.coronaColor} transparent opacity={0.25} />
+          </mesh>
+          <mesh ref={ringRef2} rotation={[Math.PI / 3, 0.5, 0]}>
+            <torusGeometry args={[starSize * 2.1, 0.04, 8, 64]} />
+            <meshBasicMaterial color={cfg.color} transparent opacity={0.15} />
+          </mesh>
+        </>
+      )}
+
+      {/* Particle streams — supergiant+ */}
+      {(starType === 'supergiant' || isHyper) && (
+        <ParticleStreams color={cfg.coronaColor} count={isHyper ? 200 : 120} />
+      )}
+
       {/* Corona */}
-      <Sphere ref={coronaRef} args={[starSize * 1.25, 16, 16]}>
+      <Sphere ref={coronaRef} args={[starSize * 1.28, 16, 16]}>
         <MeshDistortMaterial
-          color={starColor}
-          emissive={starColor}
-          emissiveIntensity={0.3}
-          distort={0.3}
-          speed={2}
+          color={isHyper ? '#ffccff' : cfg.coronaColor}
+          emissive={cfg.coronaColor}
+          emissiveIntensity={0.4}
+          distort={0.25}
+          speed={isHyper ? 4 : 2}
           transparent
-          opacity={0.5}
-          wireframe={false}
+          opacity={0.55}
         />
       </Sphere>
 
       {/* Main star body */}
       <Sphere ref={meshRef} args={[starSize, 64, 64]}>
         <MeshDistortMaterial
-          color={starColor}
-          emissive={starColor}
-          emissiveIntensity={1.2}
-          distort={0.15}
-          speed={3}
+          color={cfg.color}
+          emissive={cfg.color}
+          emissiveIntensity={cfg.intensity}
+          distort={isHyper ? 0.2 : 0.12}
+          speed={isHyper ? 5 : 3}
           roughness={0.1}
-          metalness={0}
         />
       </Sphere>
 
-      {/* Point light for illuminating planets */}
-      <pointLight
-        color={starColor}
-        intensity={score > 10000 ? 3 : 2}
-        distance={200}
-        decay={1}
-      />
-      <pointLight
-        color={starColor}
-        intensity={0.5}
-        distance={300}
-        decay={0.5}
-      />
+      <pointLight color={cfg.color} intensity={score > 10000 ? 3.5 : 2.5} distance={220} decay={1} />
+      <pointLight color={cfg.coronaColor} intensity={0.6} distance={350} decay={0.5} />
     </group>
   )
 }

@@ -27,7 +27,7 @@ export function SearchBar({ onSearch }: SearchBarProps) {
     if (onSearch) {
       onSearch(username)
     } else {
-      router.push(`/${username}`)
+      router.push(`/universe/${username}`)
     }
   }
 
@@ -126,7 +126,7 @@ export function SearchBar({ onSearch }: SearchBarProps) {
               setValue(name)
               setTimeout(() => {
                 if (onSearch) onSearch(name)
-                else router.push(`/${name}`)
+                else router.push(`/universe/${name}`)
               }, 100)
             }}
             className="font-mono text-xs text-gray-700 hover:text-space-cyan/60 transition-colors"

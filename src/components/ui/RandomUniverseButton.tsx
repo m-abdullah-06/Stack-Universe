@@ -27,12 +27,12 @@ export function RandomUniverseButton({
         // Fallback to known interesting users
         const fallbacks = ['torvalds', 'gaearon', 'sindresorhus', 'yyx990803', 'antirez']
         const pick = fallbacks[Math.floor(Math.random() * fallbacks.length)]
-        router.push(`/${pick}`)
+        router.push(`/universe/${pick}`)
         return
       }
 
       const pick = universes[Math.floor(Math.random() * universes.length)]
-      router.push(`/${pick.username}`)
+      router.push(`/universe/${pick.username}`)
     } catch {
       setLoading(false)
     }
