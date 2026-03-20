@@ -33,6 +33,14 @@ export interface GitHubRepo {
   size: number
   topics: string[]
   open_issues_count: number
+  // Health metrics (fetched via GraphQL or detail API)
+  closed_issues_count?: number
+  merged_pr_count?: number
+  has_readme?: boolean
+  has_workflows?: boolean
+  commit_count_90d?: number
+  has_license?: boolean
+  license?: { key: string; name: string; spdx_id: string; url: string; node_id: string } | null
 }
 
 export interface GitHubEvent {
@@ -99,6 +107,7 @@ export interface UniverseData {
   commitActivity:     Record<string, number[]>
   // open PRs per top-5 repo
   openPRs:            Record<string, PullRequest[]>
+  metrics_status:     'success' | 'failed'
 }
 
 export interface StoredUniverse {

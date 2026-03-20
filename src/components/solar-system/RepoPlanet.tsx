@@ -239,39 +239,30 @@ export function RepoPlanet({
           return {
             planetColor:      baseColor,
             atmosColor:       '#aaffdd',
-            atmosOpacity:     hovered || isSelected ? 0.18 : 0.10,
-            emissiveIntensity: hovered || isSelected ? 0.65 : 0.30,
-            distort:           0.06,
-            distortSpeed:      1.2,
-          }
-        case 'healthy':
-          return {
-            planetColor:      baseColor,
-            atmosColor:       baseColor,
-            atmosOpacity:     hovered || isSelected ? 0.13 : 0.05,
-            emissiveIntensity: hovered || isSelected ? 0.55 : 0.20,
-            distort:           0.08,
-            distortSpeed:      1.5,
+            atmosOpacity:     hovered || isSelected ? 0.22 : 0.12,
+            emissiveIntensity: hovered || isSelected ? 0.85 : 0.40,
+            distort:           0.04,
+            distortSpeed:      1.0,
           }
         case 'struggling':
           return {
             planetColor:      baseColor,
-            atmosColor:       '#ff6622',
-            atmosOpacity:     hovered || isSelected ? 0.18 : 0.09,
-            emissiveIntensity: hovered || isSelected ? 0.40 : 0.14,
-            distort:           0.14,
-            distortSpeed:      2.0,
+            atmosColor:       '#ff3311',
+            atmosOpacity:     hovered || isSelected ? 0.25 : 0.14,
+            emissiveIntensity: hovered || isSelected ? 0.50 : 0.18,
+            distort:           0.18,
+            distortSpeed:      2.5,
           }
         case 'dormant':
         default:
           // Desaturate by mixing toward dark grey
           return {
-            planetColor:      '#334455',
-            atmosColor:       '#223344',
-            atmosOpacity:     hovered || isSelected ? 0.10 : 0.04,
-            emissiveIntensity: hovered || isSelected ? 0.20 : 0.06,
-            distort:           0.04,
-            distortSpeed:      0.6,
+            planetColor:      '#2a2a35',
+            atmosColor:       '#1a1a25',
+            atmosOpacity:     hovered || isSelected ? 0.12 : 0.05,
+            emissiveIntensity: hovered || isSelected ? 0.15 : 0.04,
+            distort:           0.02,
+            distortSpeed:      0.4,
           }
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -386,8 +377,8 @@ export function RepoPlanet({
           />
         </Sphere>
 
-        {/* Crack overlay — dormant tier 1 OR all graveyard */}
-        {((health.tier === 'dormant' && tier === 1) || isGraveyard) && (
+        {/* Crack overlay — struggling/dormant tier 1 OR all graveyard */}
+        {((health.tier !== 'thriving' && tier === 1) || isGraveyard) && (
           <CrackOverlay size={size} />
         )}
 

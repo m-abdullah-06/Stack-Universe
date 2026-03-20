@@ -38,6 +38,25 @@ async function fetchGitHub<T>(path: string): Promise<T> {
   return res.json()
 }
 
+async function fetchGraphQL<T>(query: string, variables: Record<string, any>): Promise<T> {
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      ...getHeaders(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`GitHub GraphQL error: ${res.status}`)
+  const json = await res.json()
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors)
+    throw new Error('GraphQL error')
+  }
+  return json.data as T
+}
+
 export async function fetchUniverseData(username: string): Promise<UniverseData> {
   const [user, repos, events] = await Promise.all([
     fetchGitHub<GitHubUser>(`/users/${username}`),
@@ -48,6 +67,67 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
       () => [] as GitHubEvent[]
     ),
   ])
+
+  // --- Health Metrics via GraphQL ---
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString()
+  let healthMetrics: Record<string, any> = {}
+  
+  try {
+    const gqlData = await fetchGraphQL<any>(`
+      query($username: String!, $since: DateTime!) {
+        user(login: $username) {
+          repositories(first: 100, ownerAffiliations: OWNER, orderBy: {field: PUSHED_AT, direction: DESC}) {
+            nodes {
+              name
+              closedIssues: issues(states: CLOSED) { totalCount }
+              mergedPRs: pullRequests(states: MERGED) { totalCount }
+              rootTree: object(expression: "HEAD:") {
+                ... on Tree {
+                  entries {
+                    name
+                  }
+                }
+              }
+              workflows: object(expression: "HEAD:.github/workflows") { id }
+              licenseInfo { name }
+              defaultBranchRef {
+                target {
+                  ... on Commit {
+                    history(since: $since) { totalCount }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `, { username, since: ninetyDaysAgo })
+
+    if (gqlData?.user?.repositories?.nodes) {
+      gqlData.user.repositories.nodes.forEach((node: any) => {
+        const entries = node.rootTree?.entries || []
+        const hasReadme = entries.some((e: any) => e.name.toLowerCase().startsWith('readme'))
+        
+        healthMetrics[node.name.toLowerCase()] = {
+          closed_issues_count: node.closedIssues?.totalCount ?? 0,
+          merged_pr_count: node.mergedPRs?.totalCount ?? 0,
+          has_readme: hasReadme,
+          has_workflows: !!node.workflows,
+          commit_count_90d: node.defaultBranchRef?.target?.history?.totalCount ?? 0,
+          has_license: !!node.licenseInfo,
+        }
+      })
+    }
+    console.log(`[Health] Fetched metrics for ${Object.keys(healthMetrics).length} repos via GraphQL.`)
+  } catch (err) {
+    console.error('Failed to fetch health metrics via GraphQL:', err)
+  }
+
+  // Inject health metrics into repos (using case-insensitive matching)
+  const reposWithHealth = repos.map(r => ({
+    ...r,
+    ...(healthMetrics[r.name.toLowerCase()] || {})
+  }))
 
   // --- Language aggregation ---
   const langMap: Record<string, { bytes: number; repos: GitHubRepo[]; lastPushed: string }> = {}
@@ -204,7 +284,7 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
   return {
     username,
     user,
-    repos: repos.sort((a, b) => b.stargazers_count - a.stargazers_count),
+    repos: reposWithHealth.sort((a, b) => b.stargazers_count - a.stargazers_count),
     languages,
     recentCommits,
     totalStars,
@@ -217,5 +297,6 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     repoLanguages,
     commitActivity,
     openPRs,
+    metrics_status: Object.keys(healthMetrics).length > 0 ? 'success' : 'failed',
   }
 }
