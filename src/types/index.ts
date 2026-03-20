@@ -71,6 +71,16 @@ export interface UniverseScore {
   tier: string
 }
 
+export interface PullRequest {
+  id: number
+  number: number
+  title: string
+  html_url: string
+  created_at: string
+  user: { login: string } | null
+  draft: boolean
+}
+
 export interface UniverseData {
   username: string
   user: GitHubUser
@@ -84,10 +94,11 @@ export interface UniverseData {
   distanceLabel: string
   dominantLanguage: string | null
   accountAgeYears: number
-  repoLanguages: Record<string, Record<string, number>>
-  totalCommits: number
-  isHighStreak: boolean
-  lastCommitDate: string | null
+  repoLanguages:      Record<string, Record<string, number>>
+  // 12-month commit buckets per top-5 repo  [month0..month11, oldest→newest]
+  commitActivity:     Record<string, number[]>
+  // open PRs per top-5 repo
+  openPRs:            Record<string, PullRequest[]>
 }
 
 export interface StoredUniverse {

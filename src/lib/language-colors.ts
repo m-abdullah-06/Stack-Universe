@@ -1,31 +1,31 @@
 export const LANGUAGE_COLORS: Record<string, string> = {
-  JavaScript: '#f7df1e',
-  TypeScript: '#3178c6',
-  Python: '#3572a5',
-  Java: '#b07219',
-  Rust: '#dea584',
-  Go: '#00add8',
-  'C++': '#f34b7d',
-  C: '#555555',
-  'C#': '#178600',
-  Swift: '#f05138',
-  Kotlin: '#a97bff',
-  Ruby: '#701516',
-  PHP: '#4f5d95',
-  Scala: '#c22d40',
-  Shell: '#89e051',
-  Bash: '#89e051',
-  HTML: '#e34c26',
-  CSS: '#563d7c',
-  SCSS: '#c6538c',
-  Vue: '#41b883',
+  JavaScript: '#ffcf00', // Neon Yellow-Gold
+  TypeScript: '#00b4ff', // Cyan-Blue
+  Python: '#4584b6',     // Bright Blue
+  Java: '#ff9900',       // Electric Orange
+  Rust: '#ff4d00',       // Blaze Orange
+  Go: '#00e5ff',         // Electric Cyan
+  'C++': '#ff0055',      // Neon Pink
+  C: '#80d4ff',          // Light Cyber Blue
+  'C#': '#00ff41',       // Matrix Green
+  Swift: '#ff3d00',      // Sunset Red
+  Kotlin: '#bf00ff',     // Vibrant Purple
+  Ruby: '#ff003c',       // Crimson Neon
+  PHP: '#777bb4',
+  Scala: '#ff2d3f',
+  Shell: '#00ff85',      // Mint Neon
+  Bash: '#00ff85',
+  HTML: '#ff5c00',       // Hot Orange
+  CSS: '#bf00ff',        // Purple Neon
+  SCSS: '#ff0095',       // Magenta Neon
+  Vue: '#42d392',        // Emerald Neon
   Svelte: '#ff3e00',
-  Dart: '#00b4ab',
-  Elixir: '#6e4a7e',
-  Haskell: '#5e5086',
-  Clojure: '#db5855',
-  Lua: '#000080',
-  R: '#198ce7',
+  Dart: '#00e7ff',
+  Elixir: '#a300ff',
+  Haskell: '#8f47ff',
+  Clojure: '#ff5c5c',
+  Lua: '#0000ff',
+  R: '#276dc3',
   MATLAB: '#e16737',
   Julia: '#a270ba',
   Perl: '#0298c3',
@@ -36,10 +36,10 @@ export const LANGUAGE_COLORS: Record<string, string> = {
   Zig: '#ec915c',
   Nim: '#ffc200',
   Crystal: '#000100',
-  Groovy: '#e69f56',
-  Terraform: '#7b42bc',
-  Dockerfile: '#384d54',
-  Makefile: '#427819',
+  Groovy: '#e09f56',
+  Terraform: '#844fba',
+  Dockerfile: '#00a3ff',
+  Makefile: '#44cc11',
   Assembly: '#6e4c13',
   Nix: '#7e7eff',
   Racket: '#3c5caa',
@@ -48,11 +48,12 @@ export const LANGUAGE_COLORS: Record<string, string> = {
   Apex: '#1797c0',
   Solidity: '#aa6746',
   Hack: '#878787',
-  WebAssembly: '#04133b',
+  WebAssembly: '#654ff0',
 }
 
 export function getLanguageColor(language: string): string {
-  return LANGUAGE_COLORS[language] || `hsl(${hashCode(language) % 360}, 70%, 60%)`
+  // Use a highly saturated/vibrant HSL for unknown languages
+  return LANGUAGE_COLORS[language] || `hsl(${hashCode(language) % 360}, 95%, 65%)`
 }
 
 function hashCode(str: string): number {
@@ -60,7 +61,7 @@ function hashCode(str: string): number {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i)
     hash = (hash << 5) - hash + char
-    hash = hash & hash
+    hash = hash & hash // Convert to 32bit integer
   }
   return Math.abs(hash)
 }

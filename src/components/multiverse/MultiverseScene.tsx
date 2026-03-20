@@ -113,7 +113,7 @@ export function MultiverseScene({ universes, leaderboard, isWarping, onWarpStart
         <DriftCamera />
 
         <Suspense fallback={null}>
-          <Stars radius={500} depth={100} count={8000} factor={5} saturation={0.1} fade speed={0.1} />
+          <Stars radius={500} depth={120} count={12000} factor={6} saturation={0.5} fade speed={0.25} />
           <NebulaClouds />
           <DistantUniverses universes={universes} top10Usernames={leaderboard.slice(0, 10).map((e) => e.username)} />
 

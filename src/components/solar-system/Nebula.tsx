@@ -587,43 +587,29 @@ export function PhantomPlanets() {
 // ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
 interface NebulaProps {
   username: string
-  dominantLanguage: string | null
+  primaryColor: string
   nebulaType: NebulaType
-  totalCommits: number
-  accountAgeYears: number
+  spread: number
+  density: number
   extraColors: string[]
 }
 
 export function Nebula({ 
   username, 
-  dominantLanguage, 
+  primaryColor, 
   nebulaType, 
-  totalCommits, 
-  accountAgeYears, 
+  spread, 
+  density, 
   extraColors 
 }: NebulaProps) {
   const seed = usernameHash(username)
   const rand = useMemo(() => seededRandom(seed), [seed])
 
-  // Stat-based size and density
-  // Size = total commit count (normalized)
-  const sizeMultiplier = Math.min(2.5, Math.max(0.8, totalCommits / 2000))
-  // Density = contribution frequency (commits per year)
-  const frequency = totalCommits / Math.max(1, accountAgeYears)
-  const densityMultiplier = Math.min(2.0, Math.max(0.5, frequency / 500))
+  // Scale and density are now controlled by spread and density props
+  const sizeMultiplier = spread / 40 // Normalize spread to scale
+  const densityMultiplier = density // Use density directly for internal counts if needed
 
-  // Language-based colors
-  const languageColorMap: Record<string, string> = {
-    'JavaScript': '#FFD700', // Golden
-    'TypeScript': '#FFD700', // Golden (treated as JS flavor)
-    'Python': '#9B30FF',     // Purple
-    'Rust': '#FF4500',       // Fiery Orange
-    'C++': '#FF4500',
-    'Go': '#00ADD8',
-  }
-
-  const primaryColor = (dominantLanguage && languageColorMap[dominantLanguage]) || extraColors[0] || '#00e5ff'
-
+  // Language-based colors (legacy, now using primaryColor from props)
   return (
     <group scale={sizeMultiplier}>
       {/* Container for density adjustment - we could pass it down, 

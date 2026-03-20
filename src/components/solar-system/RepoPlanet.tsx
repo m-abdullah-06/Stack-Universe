@@ -2,12 +2,14 @@
 
 import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Sphere, Ring, MeshDistortMaterial } from '@react-three/drei'
+import { Sphere, Ring, MeshDistortMaterial, Html } from '@react-three/drei'
 import * as THREE from 'three'
-import type { GitHubRepo, RepoTier } from '@/types'
+import type { GitHubRepo, RepoTier, PullRequest } from '@/types'
 import { getLanguageColor } from '@/lib/language-colors'
 import { getDaysSinceActivity, getOrbitSpeed } from '@/lib/universe-score'
+import { calcRepoHealth } from '@/lib/repo-health'
 
+// ── Language moon ─────────────────────────────────────────────────────────────
 interface LangMoonProps {
   color: string
   moonSize: number
@@ -32,12 +34,153 @@ function LangMoon({ color, moonSize, orbitRadius, offset, speed }: LangMoonProps
   return (
     <group ref={ref}>
       <Sphere args={[moonSize, 8, 8]}>
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.3} roughness={0.7} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.3}
+          roughness={0.7}
+        />
       </Sphere>
     </group>
   )
 }
 
+// ── Storm cloud layer (struggling tier) ──────────────────────────────────────
+function StormLayer({ size }: { size: number }) {
+  const ref = useRef<THREE.Mesh>(null)
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.rotation.y = state.clock.getElapsedTime() * 0.25
+      ref.current.rotation.z = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.08
+    }
+  })
+  return (
+    <Sphere ref={ref} args={[size * 1.12, 16, 16]}>
+      <MeshDistortMaterial
+        color="#cc4400"
+        transparent
+        opacity={0.22}
+        distort={0.35}
+        speed={2.5}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </Sphere>
+  )
+}
+
+// ── Dormant crack overlay ─────────────────────────────────────────────────────
+function CrackOverlay({ size }: { size: number }) {
+  return (
+    <Sphere args={[size * 1.005, 8, 8]}>
+      <meshBasicMaterial
+        color="#001122"
+        transparent
+        opacity={0.45}
+        wireframe
+        depthWrite={false}
+      />
+    </Sphere>
+  )
+}
+
+// ── Commit velocity ring — 3D segments floating above planet ─────────────────
+interface VelocityRing3DProps {
+  months: number[]   // 12 values, oldest first
+  size: number
+  color: string
+}
+
+function VelocityRing3D({ months, size, color }: VelocityRing3DProps) {
+  const max = Math.max(...months, 1)
+  const segCount = 12
+  const ringR = size * 1.55 // Move closer for "fixed" look
+
+  return (
+    <group rotation={[-Math.PI / 2, 0, 0]}>
+      {months.map((val, i) => {
+        const angle = (i / segCount) * Math.PI * 2
+        const fill = val / max
+        const active = val > 0
+
+        return (
+          <mesh
+            key={i}
+            rotation={[0, 0, angle]}
+          >
+            {/* Segment is a thin arc segment */}
+            <Ring args={[ringR, ringR + (active ? 0.08 * fill : 0.02), 32, 1, angle, (Math.PI * 2 / segCount) * 0.8]}>
+              <meshBasicMaterial
+                color={active ? color : '#223344'}
+                transparent
+                opacity={active ? 0.2 + fill * 0.5 : 0.1}
+                side={THREE.DoubleSide}
+                depthWrite={false}
+              />
+            </Ring>
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+function SimpleVelocityRing({ size, color }: {
+  size: number; color: string
+}) {
+  return (
+    <Ring args={[size * 1.5, size * 1.52, 64]} rotation={[-Math.PI / 2, 0, 0]}>
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={0.15}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+      />
+    </Ring>
+  )
+}
+
+// ── Fixed PR Indicator (replaces orbiting moons) ───────────────────────────
+function StaticPRIndicator({ pr, orbitRadius, index, total }: {
+  pr: PullRequest; orbitRadius: number; index: number; total: number
+}) {
+  const angle = (index / total) * Math.PI * 2
+  const [hovered, setHovered] = useState(false)
+  
+  const stale = (Date.now() - new Date(pr.created_at).getTime()) > 30 * 86400000
+  const color = pr.draft ? '#888844' : (stale ? '#aa7700' : '#ffd700')
+
+  return (
+    <group
+      position={[
+        Math.cos(angle) * orbitRadius,
+        0,
+        Math.sin(angle) * orbitRadius
+      ]}
+    >
+      <mesh
+        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }}
+        onPointerOut={() => { setHovered(false); document.body.style.cursor = 'crosshair' }}
+        onClick={(e) => { e.stopPropagation(); window.open(pr.html_url, '_blank', 'noopener') }}
+      >
+        <boxGeometry args={[0.08, 0.08, 0.08]} />
+        <meshBasicMaterial color={color} transparent opacity={0.8} />
+      </mesh>
+
+      {hovered && (
+        <Html center distanceFactor={6} style={{ pointerEvents: 'none', zIndex: 300 }}>
+          <div className="bg-[#05050f]/95 border border-white/10 p-2 rounded shadow-2xl min-w-[150px]">
+            <div className="font-mono text-[9px] font-bold" style={{ color }}>#{pr.number}</div>
+            <div className="text-[8px] text-gray-400 mt-1">{pr.title}</div>
+          </div>
+        </Html>
+      )}
+    </group>
+  )
+}
+
+// ── Main planet ───────────────────────────────────────────────────────────────
 interface RepoPlanetProps {
   repo: GitHubRepo
   tier: RepoTier
@@ -45,23 +188,41 @@ interface RepoPlanetProps {
   offset: number
   index: number
   repoLanguages?: Record<string, number>
+  commitMonths?: number[]          // 12-bucket activity (tier 1 only)
+  openPRs?: PullRequest[]          // open PRs (tier 1 only)
+  isGraveyard?: boolean
   onSelect?: (repo: GitHubRepo | null) => void
   isSelected?: boolean
 }
 
 export function RepoPlanet({
   repo, tier, orbitRadius, offset, index,
-  repoLanguages, onSelect, isSelected,
+  repoLanguages, commitMonths, openPRs,
+  isGraveyard = false, onSelect, isSelected,
 }: RepoPlanetProps) {
   const groupRef  = useRef<THREE.Group>(null)
   const planetRef = useRef<THREE.Mesh>(null)
   const [hovered, setHovered] = useState(false)
   const angleRef  = useRef(offset)
 
-  const color      = getLanguageColor(repo.language ?? '')
+  const baseColor  = getLanguageColor(repo.language ?? '')
   const daysSince  = getDaysSinceActivity(repo.pushed_at)
-  const speed      = getOrbitSpeed(daysSince) * (tier === 1 ? 0.22 : tier === 2 ? 0.18 : 0.14)
-  const hasRings   = repo.stargazers_count >= 50 && tier === 1
+
+  // Graveyard repos drift much slower than normal
+  const orbitSpeed = isGraveyard
+    ? 0.012 + (index % 4) * 0.003
+    : getOrbitSpeed(daysSince) * (tier === 1 ? 0.22 : tier === 2 ? 0.18 : 0.14)
+
+  const hasRings = repo.stargazers_count >= 50 && tier === 1 && !isGraveyard
+
+  // Graveyard forces dormant health regardless of actual score
+  const health = useMemo(
+    () => isGraveyard
+      ? { score: 0, tier: 'dormant' as const, label: 'Dead', color: '#3a3a4a',
+          breakdown: [] }
+      : calcRepoHealth(repo),
+    [repo, isGraveyard]
+  )
 
   const size = useMemo(() => {
     const log = Math.log10(repo.stargazers_count + 1) * 0.55
@@ -69,6 +230,52 @@ export function RepoPlanet({
     if (tier === 2) return Math.max(0.30, Math.min(0.95, 0.30 + log * 0.65))
     return Math.max(0.14, Math.min(0.36, 0.14 + log * 0.28))
   }, [repo.stargazers_count, tier])
+
+  // Visual properties derived from health tier
+  const { planetColor, atmosColor, atmosOpacity, emissiveIntensity, distort, distortSpeed } =
+    useMemo(() => {
+      switch (health.tier) {
+        case 'thriving':
+          return {
+            planetColor:      baseColor,
+            atmosColor:       '#aaffdd',
+            atmosOpacity:     hovered || isSelected ? 0.18 : 0.10,
+            emissiveIntensity: hovered || isSelected ? 0.65 : 0.30,
+            distort:           0.06,
+            distortSpeed:      1.2,
+          }
+        case 'healthy':
+          return {
+            planetColor:      baseColor,
+            atmosColor:       baseColor,
+            atmosOpacity:     hovered || isSelected ? 0.13 : 0.05,
+            emissiveIntensity: hovered || isSelected ? 0.55 : 0.20,
+            distort:           0.08,
+            distortSpeed:      1.5,
+          }
+        case 'struggling':
+          return {
+            planetColor:      baseColor,
+            atmosColor:       '#ff6622',
+            atmosOpacity:     hovered || isSelected ? 0.18 : 0.09,
+            emissiveIntensity: hovered || isSelected ? 0.40 : 0.14,
+            distort:           0.14,
+            distortSpeed:      2.0,
+          }
+        case 'dormant':
+        default:
+          // Desaturate by mixing toward dark grey
+          return {
+            planetColor:      '#334455',
+            atmosColor:       '#223344',
+            atmosOpacity:     hovered || isSelected ? 0.10 : 0.04,
+            emissiveIntensity: hovered || isSelected ? 0.20 : 0.06,
+            distort:           0.04,
+            distortSpeed:      0.6,
+          }
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [health.tier, baseColor, hovered, isSelected])
 
   const langMoons = useMemo(() => {
     if (tier !== 1 || !repoLanguages) return []
@@ -86,9 +293,9 @@ export function RepoPlanet({
       }))
   }, [tier, repoLanguages, size])
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (isSelected) return
-    angleRef.current += speed * delta
+    angleRef.current += orbitSpeed * delta
     if (groupRef.current) {
       const tilt = (index % 5) * 0.08
       groupRef.current.position.set(
@@ -97,39 +304,61 @@ export function RepoPlanet({
         Math.sin(angleRef.current) * orbitRadius,
       )
     }
-    if (planetRef.current) planetRef.current.rotation.y += delta * 0.45
+    if (planetRef.current) {
+      // Graveyard and dormant planets wobble slowly
+      if (isGraveyard || health.tier === 'dormant') {
+        planetRef.current.rotation.y += delta * 0.05
+        planetRef.current.rotation.z = Math.sin(state.clock.getElapsedTime() * 0.3 + index) * 0.09
+      } else {
+        planetRef.current.rotation.y += delta * 0.45
+      }
+    }
   })
 
   return (
-    <group ref={groupRef}>
-      {/* Orbit ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[orbitRadius - 0.02, orbitRadius + 0.02, 96]} />
+    <>
+      {/* Orbit ring — fixed at system center, stays visible while planet revolves */}
+      <Ring 
+        args={[orbitRadius - 0.02, orbitRadius + 0.02, isGraveyard ? 24 : 128]} 
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
         <meshBasicMaterial
-          color={color}
+          color={isGraveyard ? '#1a1a2a' : planetColor}
           transparent
-          opacity={hovered || isSelected ? 0.2 : 0.05}
+          opacity={isGraveyard
+            ? (hovered || isSelected ? 0.08 : 0.02)
+            : (hovered || isSelected ? 0.25 : 0.06)}
           side={THREE.DoubleSide}
+          depthWrite={false}
         />
-      </mesh>
+      </Ring>
 
-      <group>
-        {/* Atmosphere */}
-        {tier <= 2 && (
+      <group ref={groupRef}>
+        <group>
+        {/* Atmosphere — health-tinted, none for graveyard */}
+        {tier <= 2 && !isGraveyard && (
           <Sphere args={[size * 1.45, 16, 16]}>
             <meshBasicMaterial
-              color={color}
+              color={atmosColor}
               transparent
-              opacity={hovered || isSelected ? 0.13 : 0.05}
+              opacity={atmosOpacity}
               side={THREE.BackSide}
+              depthWrite={false}
             />
           </Sphere>
         )}
 
-        {/* Planet body */}
+        {/* Storm clouds — struggling tier 1 only */}
+        {health.tier === 'struggling' && tier === 1 && !isGraveyard && (
+          <StormLayer size={size} />
+        )}
+
+        {/* Planet body — high-end Minimalist Glass */}
         <Sphere
           ref={planetRef}
-          args={[size, tier === 1 ? 32 : tier === 2 ? 20 : 10, tier === 1 ? 32 : tier === 2 ? 20 : 10]}
+          args={[size, 
+            isGraveyard ? 16 : (tier === 1 ? 48 : tier === 2 ? 32 : 16),
+            isGraveyard ? 16 : (tier === 1 ? 48 : tier === 2 ? 32 : 16)]}
           onPointerOver={(e) => {
             e.stopPropagation()
             setHovered(true)
@@ -141,56 +370,127 @@ export function RepoPlanet({
           }}
           onClick={(e) => {
             e.stopPropagation()
-            if (onSelect) {
-              onSelect(isSelected ? null : repo)
-            } else {
-              window.open(repo.html_url, '_blank', 'noopener')
-            }
+            if (onSelect) onSelect(isSelected ? null : repo)
           }}
         >
-          {tier === 1 ? (
-            <MeshDistortMaterial
-              color={color}
-              emissive={color}
-              emissiveIntensity={hovered || isSelected ? 0.55 : 0.2}
-              distort={0.08}
-              speed={1.5}
-              roughness={0.6}
-            />
-          ) : (
-            <meshStandardMaterial
-              color={color}
-              emissive={color}
-              emissiveIntensity={hovered ? 0.4 : 0.15}
-              roughness={0.7}
-            />
-          )}
+          <meshPhysicalMaterial
+            color={isGraveyard ? '#11111a' : planetColor}
+            emissive={isGraveyard ? '#05050a' : planetColor}
+            emissiveIntensity={hovered ? 0.8 : (isGraveyard ? 0.05 : 0.3)}
+            roughness={0.15}
+            metalness={0.05}
+            transmission={0.6}
+            thickness={2}
+            transparent={true}
+            opacity={0.9}
+          />
         </Sphere>
 
-        {/* Rings for 50+ stars */}
+        {/* Crack overlay — dormant tier 1 OR all graveyard */}
+        {((health.tier === 'dormant' && tier === 1) || isGraveyard) && (
+          <CrackOverlay size={size} />
+        )}
+
+        {/* Thriving clean inner glow */}
+        {health.tier === 'thriving' && tier === 1 && !isGraveyard && (
+          <Sphere args={[size * 1.08, 16, 16]}>
+            <meshBasicMaterial
+              color="#aaffdd"
+              transparent
+              opacity={hovered ? 0.10 : 0.04}
+              side={THREE.BackSide}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+            />
+          </Sphere>
+        )}
+
+        {/* Saturn rings — 50+ stars, alive only */}
         {hasRings && (
           <>
             <Ring args={[size * 1.65, size * 2.1, 64]} rotation={[Math.PI * 0.28, 0.3, 0]}>
-              <meshBasicMaterial color={color} transparent opacity={0.35} side={THREE.DoubleSide} />
+              <meshBasicMaterial color={planetColor} transparent opacity={0.35} side={THREE.DoubleSide} />
             </Ring>
             <Ring args={[size * 2.2, size * 2.5, 64]} rotation={[Math.PI * 0.28, 0.3, 0]}>
-              <meshBasicMaterial color={color} transparent opacity={0.15} side={THREE.DoubleSide} />
+              <meshBasicMaterial color={planetColor} transparent opacity={0.15} side={THREE.DoubleSide} />
             </Ring>
           </>
         )}
 
-        {/* Selected pulse ring */}
+        {/* Selected pulse ring — sharp & minimal */}
         {isSelected && (
-          <Ring args={[size * 1.8, size * 2.0, 64]} rotation={[-Math.PI / 2, 0, 0]}>
-            <meshBasicMaterial color={color} transparent opacity={0.45} side={THREE.DoubleSide} />
+          <Ring args={[size * 1.8, size * 1.85, 64]} rotation={[-Math.PI / 2, 0, 0]}>
+            <meshBasicMaterial
+              color={isGraveyard ? '#445566' : health.color}
+              transparent opacity={0.6} side={THREE.DoubleSide}
+            />
           </Ring>
         )}
 
-        {/* Language moons — tier 1 selected only */}
-        {tier === 1 && isSelected && langMoons.map((m, mi) => (
+        {/* Language moons — tier 1 selected, alive only */}
+        {tier === 1 && isSelected && !isGraveyard && langMoons.map((m, mi) => (
           <LangMoon key={m.lang + mi} {...m} />
         ))}
+
+        {/* Commit velocity ring — always visible, tier 1 real data, tier 2/3 simplified */}
+        {!isGraveyard && tier === 1 && commitMonths && (
+          <VelocityRing3D months={commitMonths} size={size} color={baseColor} />
+        )}
+        {!isGraveyard && tier >= 2 && (
+          <SimpleVelocityRing size={size} color={baseColor} />
+        )}
+
+        {/* PR Indicators — Fixed Static Markers */}
+        {!isGraveyard && tier === 1 && openPRs && openPRs.length > 0 && (
+          <group>
+            {/* Fine orbital line for PRs */}
+            <Ring args={[size * 2.5, size * 2.51, 64]} rotation={[-Math.PI / 2, 0, 0]}>
+              <meshBasicMaterial color="#ffffff" transparent opacity={0.05} />
+            </Ring>
+            {openPRs.slice(0, 8).map((pr, pi) => (
+              <StaticPRIndicator
+                key={pr.id}
+                pr={pr}
+                orbitRadius={size * 2.5}
+                index={pi}
+                total={Math.min(openPRs.length, 8)}
+              />
+            ))}
+          </group>
+        )}
+
+        {/* Graveyard hover tooltip — Minimal Archived Record */}
+        {isGraveyard && hovered && (
+          <Html center distanceFactor={10} style={{ pointerEvents: 'none', zIndex: 200 }}>
+            <div className="bg-[#05050f]/95 backdrop-blur-3xl border border-white/5 p-4 rounded-xl shadow-2xl min-w-[200px]">
+              <div className="flex items-center gap-3 mb-3 pb-2 border-b border-white/5">
+                <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-gray-500">Archived Record</span>
+              </div>
+              <h4 className="font-orbitron font-bold text-sm text-white mb-1">{repo.name}</h4>
+              <div className="space-y-1.5 mt-3">
+                <div className="flex justify-between font-mono text-[9px]">
+                  <span className="text-gray-600">INACTIVITY</span>
+                  <span className="text-gray-400">
+                    {Math.floor((Date.now() - new Date(repo.pushed_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25))} Years
+                  </span>
+                </div>
+                <div className="flex justify-between font-mono text-[9px]">
+                  <span className="text-gray-600">LAST PUSH</span>
+                  <span className="text-gray-400">{new Date(repo.pushed_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <div className="mt-4 pt-2 border-t border-white/5 text-center">
+                <span className="font-mono text-[8px] text-gray-700 tracking-widest uppercase italic">Deep Space Signal Lost</span>
+              </div>
+            </div>
+          </Html>
+        )}
       </group>
     </group>
-  )
+  </>
+)
 }
+
+// Export health calc so SolarSystemScene can use it in the panel
+export { calcRepoHealth }

@@ -80,22 +80,68 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     .sort((a, b) => b.bytes - a.bytes)
     .slice(0, 12)
 
-  // --- Fetch language breakdown for top 5 repos (language moons) ---
+  // --- Fetch language breakdown, commit activity, and open PRs for top 5 repos ---
   const top5 = [...repos]
     .filter(r => !r.fork)
     .sort((a, b) => b.stargazers_count - a.stargazers_count)
     .slice(0, 5)
 
-  const langResults = await Promise.allSettled(
-    top5.map(r =>
-      fetchGitHub<Record<string, number>>(`/repos/${username}/${r.name}/languages`)
-    )
-  )
+  const [langResults, activityResults, prResults] = await Promise.all([
+    Promise.allSettled(
+      top5.map(r =>
+        fetchGitHub<Record<string, number>>(`/repos/${username}/${r.name}/languages`)
+      )
+    ),
+    Promise.allSettled(
+      top5.map(r =>
+        // Returns array of 52 objects: { week, total, days[] }
+        fetchGitHub<Array<{ week: number; total: number; days: number[] }>>(
+          `/repos/${username}/${r.name}/stats/commit_activity`
+        )
+      )
+    ),
+    Promise.allSettled(
+      top5.map(r =>
+        fetchGitHub<Array<{
+          id: number; number: number; title: string
+          html_url: string; created_at: string
+          user: { login: string } | null; draft: boolean
+        }>>(`/repos/${username}/${r.name}/pulls?state=open&per_page=10`)
+      )
+    ),
+  ])
 
   const repoLanguages: Record<string, Record<string, number>> = {}
   top5.forEach((r, i) => {
-    const result = langResults[i]
-    if (result.status === 'fulfilled') repoLanguages[r.name] = result.value
+    const res = langResults[i]
+    if (res.status === 'fulfilled') repoLanguages[r.name] = res.value
+  })
+
+  // Collapse 52 weekly totals → 12 monthly buckets (oldest first)
+  const commitActivity: Record<string, number[]> = {}
+  top5.forEach((r, i) => {
+    const res = activityResults[i]
+    if (res.status !== 'fulfilled' || !Array.isArray(res.value)) return
+    const weeks = res.value  // 52 items, oldest first
+    const months = Array(12).fill(0)
+    weeks.forEach((w, wi) => {
+      // Map week index (0-51) to month bucket (0-11)
+      const monthIdx = Math.min(11, Math.floor(wi / (52 / 12)))
+      months[monthIdx] += w.total
+    })
+    commitActivity[r.name] = months
+  })
+
+  const openPRs: Record<string, Array<{
+    id: number; number: number; title: string
+    html_url: string; created_at: string
+    user: { login: string } | null; draft: boolean
+  }>> = {}
+  top5.forEach((r, i) => {
+    const res = prResults[i]
+    if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+      openPRs[r.name] = res.value
+    }
   })
 
   // --- Commit extraction ---
@@ -152,18 +198,6 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
   const totalStars = repos.reduce((s, r) => s + r.stargazers_count, 0)
   const totalForks = repos.reduce((s, r) => s + r.forks_count, 0)
   const accountAgeYears = getAccountAgeYears(user.created_at)
-  
-  // Estimate total commits based on repo sizes and stargazers (heuristic)
-  // Each 100kb of "size" is roughly 10 commits, + base for repo count
-  const totalCommits = repos.reduce((s, r) => s + Math.floor(r.size / 10), 0) + (repos.length * 20)
-  
-  const lastCommitDate = recentCommits[0]?.date || languages[0]?.lastPushed || null
-  const daysSinceLastCommit = lastCommitDate ? getDaysSinceActivity(lastCommitDate) : 365
-  
-  // Heuristic for "high streak" - based on recent commits date range if we had more info, 
-  // but here we just check if active today/yesterday as a proxy for "streak in progress"
-  const isHighStreak = daysSinceLastCommit <= 2 && recentCommits.length >= 10
-  
   const universeScore = calculateUniverseScore(totalStars, repos.length, languages.length, accountAgeYears)
   const { lightYears, distanceLabel } = calculateDistance(universeScore)
 
@@ -181,8 +215,7 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     dominantLanguage: languages[0]?.name ?? null,
     accountAgeYears,
     repoLanguages,
-    totalCommits,
-    isHighStreak,
-    lastCommitDate,
+    commitActivity,
+    openPRs,
   }
 }

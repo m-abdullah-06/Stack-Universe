@@ -97,35 +97,44 @@ function SingleStar({ commit, index, isReal, onHover }: SingleStarProps) {
 
   return (
     <group ref={groupRef}>
-      {/* Visible head */}
+      {/* Glow aura */}
+      <pointLight color={isReal ? '#00e5ff' : '#ff00e5'} intensity={hovered ? 2.5 : 0.8} distance={8} decay={2} />
+      
+      {/* Minimalist Pulse Head */}
       <mesh>
-        <sphereGeometry args={[0.22, 8, 8]} />
-        <meshBasicMaterial color={hovered ? '#ffffff' : (isReal ? '#ff006e' : '#ff006e99')} />
+        <sphereGeometry args={[0.1, 8, 8]} />
+        <meshBasicMaterial 
+          color={isReal ? '#00e5ff' : '#ff00e5'} 
+          transparent
+          opacity={0.8}
+        />
       </mesh>
 
-      {/* Large invisible hover target — stays opaque to raycaster */}
+      {/* Subtle Data Stream Fade (short trail) */}
+      <mesh position={[0, 0, -0.6]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.01, 0.08, 1.2, 8, 1, true]} />
+        <meshBasicMaterial 
+          color={isReal ? '#00e5ff' : '#ff00e5'} 
+          transparent 
+          opacity={0.15} 
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Large invisible hover target */}
       <mesh
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
         onClick={handleClick}
-        renderOrder={999}
       >
-        <sphereGeometry args={[1.4, 8, 8]} />
+        <sphereGeometry args={[1.8, 12, 12]} />
         <meshBasicMaterial
           transparent
-          opacity={0.001}   // near-zero but NOT zero — avoids Three.js transparency culling
+          opacity={0}
           depthWrite={false}
-          side={THREE.FrontSide}
         />
       </mesh>
-
-      {/* Trail */}
-      <mesh position={[0, 0, -2.0]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.012, 0.08, 4.0, 4]} />
-        <meshBasicMaterial color="#ff006e" transparent opacity={hovered ? 0.8 : 0.35} />
-      </mesh>
-
-      <pointLight color="#ff006e" intensity={hovered ? 1.5 : 0.3} distance={6} decay={2} />
     </group>
   )
 }

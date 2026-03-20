@@ -23,12 +23,12 @@ function getStarType(totalRepos: number): StarType {
 }
 
 const STAR_CONFIG: Record<StarType, { color: string; coronaColor: string; intensity: number }> = {
-  dwarf:      { color: '#ff7733', coronaColor: '#ff5500', intensity: 0.8 },
-  yellow:     { color: '#ffdd88', coronaColor: '#ffaa44', intensity: 1.0 },
-  subgiant:   { color: '#fff5cc', coronaColor: '#ffdd88', intensity: 1.2 },
-  giant:      { color: '#ffffff', coronaColor: '#cce8ff', intensity: 1.5 },
-  supergiant: { color: '#cce0ff', coronaColor: '#99bbff', intensity: 1.8 },
-  hypergiant: { color: '#ffffff', coronaColor: '#ff99ff', intensity: 2.2 },
+  dwarf:      { color: '#ff5500', coronaColor: '#ff2200', intensity: 0.8 },
+  yellow:     { color: '#ffcc00', coronaColor: '#ff8800', intensity: 0.9 },
+  subgiant:   { color: '#ffeeaa', coronaColor: '#ffba00', intensity: 1.0 },
+  giant:      { color: '#ffffff', coronaColor: '#00ccff', intensity: 1.2 },
+  supergiant: { color: '#00f3ff', coronaColor: '#0077ff', intensity: 1.5 },
+  hypergiant: { color: '#ffffff', coronaColor: '#ff00e5', intensity: 1.8 },
 }
 
 function ParticleStreams({ color, count = 120 }: { color: string; count?: number }) {
@@ -53,7 +53,7 @@ function ParticleStreams({ color, count = 120 }: { color: string; count?: number
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color={color} size={0.06} sizeAttenuation transparent opacity={0.6} />
+      <pointsMaterial color={color} size={0.04} sizeAttenuation transparent opacity={0.3} />
     </points>
   )
 }

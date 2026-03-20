@@ -121,12 +121,18 @@ function DistantUniverseOrb({ universe, isTop10 }: DistantUniverseOrbProps) {
         />
       </Sphere>
 
-      {/* Orbiting ring for top 10 */}
+      {/* Double Orbiting rings for top 10 */}
       {isTop10 && (
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[size * 2, 0.04, 8, 64]} />
-          <meshBasicMaterial color={color} transparent opacity={0.4} />
-        </mesh>
+        <>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[size * 2.2, 0.02, 8, 64]} />
+            <meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2.5, Math.PI / 4, 0]}>
+            <torusGeometry args={[size * 1.8, 0.015, 8, 64]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+          </mesh>
+        </>
       )}
 
       {/* Point light */}

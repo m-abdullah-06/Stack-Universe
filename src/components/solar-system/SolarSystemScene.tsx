@@ -2,7 +2,7 @@
 
 import { useRef, useState, Suspense, useMemo, useEffect, useCallback } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stars, AdaptiveDpr } from '@react-three/drei'
+import { OrbitControls, Stars, AdaptiveDpr, Line } from '@react-three/drei'
 import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -19,27 +19,39 @@ import { EmptyUniverse } from './EmptyUniverse'
 import type { UniverseData, LanguageData, GitHubRepo, ViewMode } from '@/types'
 import { useUniverseStore } from '@/store'
 import { getLanguageColor } from '@/lib/language-colors'
+import { calcRepoHealth } from '@/lib/repo-health'
 
 // ── Tier orbit constants ──────────────────────────────────────────────────────
-const T1_BASE = 8,  T1_STEP = 3.5
-const T2_BASE = 26, T2_STEP = 2.0
-const T3_BASE = 48, T3_STEP = 1.4
-const T4_INNER = 72, T4_OUTER = 82
+const T1_BASE = 15,  T1_STEP = 7.0
+const T2_BASE = 55,  T2_STEP = 5.0
+const T3_BASE = 110, T3_STEP = 4.0
+const T4_INNER = 160, T4_OUTER = 185
+const GY_BASE  = 220, GY_STEP  = 6.0   // graveyard — beyond the belt
 
 // ── Background ────────────────────────────────────────────────────────────────
-function BackgroundStars() {
-  return <Stars radius={150} depth={60} count={5000} factor={4} saturation={0.1} fade speed={0.3} />
+function BackgroundStars({ perfLevel }: { perfLevel: 'low' | 'high' }) {
+  return (
+    <Stars 
+      radius={perfLevel === 'low' ? 120 : 180} 
+      depth={perfLevel === 'low' ? 40 : 80} 
+      count={perfLevel === 'low' ? 2000 : 8000} 
+      factor={perfLevel === 'low' ? 3 : 5} 
+      saturation={perfLevel === 'low' ? 0.05 : 0.4} 
+      fade 
+      speed={perfLevel === 'low' ? 0.2 : 0.8} 
+    />
+  )
 }
 
 // ── Nebula badge labels ───────────────────────────────────────────────────────
 const NEBULA_LABELS: Record<string, { label: string; color: string }> = {
-  emission:     { label: '🌟 Emission Nebula',    color: '#ff9944' },
-  dark:         { label: '🌑 Dark Nebula',         color: '#445566' },
-  reflection:   { label: '🌈 Reflection Nebula',   color: '#44aaff' },
-  planetary:    { label: '🪐 Planetary Nebula',    color: '#aa44ff' },
-  protostellar: { label: '🌀 Protostellar Cloud',  color: '#00e5ff' },
-  supernova:    { label: '💥 Supernova Remnant',   color: '#ff4466' },
-  standard:     { label: '✨ Nebula',              color: '#334455' },
+  emission:     { label: '🌟 Emission Nebula',    color: '#00ccff' },
+  dark:         { label: '🌑 Dark Nebula',         color: '#334455' },
+  reflection:   { label: '🌈 Reflection Nebula',   color: '#bf00ff' },
+  planetary:    { label: '🪐 Planetary Nebula',    color: '#ff00e5' },
+  protostellar: { label: '🌀 Protostellar Cloud',  color: '#00ffcc' },
+  supernova:    { label: '💥 Supernova Remnant',   color: '#ff4400' },
+  standard:     { label: '✨ Nebula',              color: '#00e5ff' },
 }
 
 // ── Fun facts ─────────────────────────────────────────────────────────────────
@@ -66,6 +78,37 @@ function fmtDays(dateStr: string) {
   if (d < 30)  return `${Math.floor(d / 7)}w ago`
   if (d < 365) return `${Math.floor(d / 30)}mo ago`
   return `${Math.floor(d / 365)}yr ago`
+}
+
+function ConstellationLines({ 
+  tier1, 
+  starSize = 1 
+}: { 
+  tier1: GitHubRepo[]; 
+  starSize?: number 
+}) {
+  return (
+    <group>
+      {tier1.map((repo, i) => {
+        const radius = T1_BASE + i * T1_STEP
+        const angle = (i / tier1.length) * Math.PI * 2
+        const x = Math.cos(angle) * radius
+        const z = Math.sin(angle) * radius
+        const color = getLanguageColor(repo.language || '')
+        
+        return (
+          <Line
+            key={repo.id}
+            points={[[0, 0, 0], [x, 0, z]]}
+            color={color}
+            lineWidth={0.5}
+            transparent
+            opacity={0.12}
+          />
+        )
+      })}
+    </group>
+  )
 }
 
 // ── Language side panel ───────────────────────────────────────────────────────
@@ -120,86 +163,291 @@ function LangPanel({ lang, pinned, onClose }: {
   )
 }
 
-// ── Repo detail panel ─────────────────────────────────────────────────────────
-function RepoDetailPanel({ repo, onClose, repoLanguages }: {
-  repo: GitHubRepo; onClose: () => void; repoLanguages?: Record<string, number>
+// ── Commit velocity ring — 12 monthly segments ───────────────────────────────
+function VelocityRing({
+  commits,
+  color,
+}: {
+  commits: { date: string }[]
+  color: string
 }) {
-  const color = getLanguageColor(repo.language ?? '')
-  const total = repoLanguages ? Object.values(repoLanguages).reduce((s, v) => s + v, 0) : 0
+  // Bucket commits into last 12 months
+  const now = Date.now()
+  const buckets = Array(12).fill(0)
+  commits.forEach((c) => {
+    const monthsAgo = Math.floor(
+      (now - new Date(c.date).getTime()) / (1000 * 60 * 60 * 24 * 30.5)
+    )
+    if (monthsAgo >= 0 && monthsAgo < 12) {
+      buckets[11 - monthsAgo]++
+    }
+  })
+  const max = Math.max(...buckets, 1)
+
+  const cx = 40
+  const cy = 40
+  const r = 28
+  const segCount = 12
+  const gap = 0.08  // radians gap between segments
+
+  const segments = Array.from({ length: segCount }, (_, i) => {
+    const startAngle = (i / segCount) * Math.PI * 2 - Math.PI / 2
+    const endAngle   = ((i + 1) / segCount) * Math.PI * 2 - Math.PI / 2
+    const fill       = buckets[i] / max
+
+    const r1 = 14
+    const r2 = r1 + 10 + fill * 14
+
+    const cos1s = Math.cos(startAngle + gap)
+    const sin1s = Math.sin(startAngle + gap)
+    const cos1e = Math.cos(endAngle - gap)
+    const sin1e = Math.sin(endAngle - gap)
+
+    const x1 = cx + cos1s * r1
+    const y1 = cy + sin1s * r1
+    const x2 = cx + cos1s * r2
+    const y2 = cy + sin1s * r2
+    const x3 = cx + cos1e * r2
+    const y3 = cy + sin1e * r2
+    const x4 = cx + cos1e * r1
+    const y4 = cy + sin1e * r1
+
+    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
+
+    const d = [
+      `M ${x1} ${y1}`,
+      `L ${x2} ${y2}`,
+      `A ${r2} ${r2} 0 ${largeArc} 1 ${x3} ${y3}`,
+      `L ${x4} ${y4}`,
+      `A ${r1} ${r1} 0 ${largeArc} 0 ${x1} ${y1}`,
+      'Z',
+    ].join(' ')
+
+    return { d, fill, active: buckets[i] > 0 }
+  })
+
+  const totalCommits = buckets.reduce((s, v) => s + v, 0)
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg width={80} height={80} viewBox="0 0 80 80">
+        {/* Base ring */}
+        <circle cx={cx} cy={cy} r={20} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={10} />
+        {segments.map((seg, i) => (
+          <path
+            key={i}
+            d={seg.d}
+            fill={seg.active ? color : 'rgba(255,255,255,0.05)'}
+            opacity={seg.active ? 0.3 + seg.fill * 0.7 : 1}
+          />
+        ))}
+        {/* Center label */}
+        <text x={cx} y={cy - 3} textAnchor="middle" fontSize={9}
+          fontFamily="JetBrains Mono, monospace" fill={color} fontWeight="bold">
+          {totalCommits}
+        </text>
+        <text x={cx} y={cy + 7} textAnchor="middle" fontSize={6}
+          fontFamily="JetBrains Mono, monospace" fill="rgba(255,255,255,0.3)">
+          commits
+        </text>
+      </svg>
+      <span className="font-mono text-xs text-gray-700 -mt-1">last 12mo</span>
+    </div>
+  )
+}
+
+// ── Repo detail panel ─────────────────────────────────────────────────────────
+function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits }: {
+  repo: GitHubRepo
+  onClose: () => void
+  repoLanguages?: Record<string, number>
+  recentCommits: { sha: string; message: string; date: string; repoName: string; repoUrl: string }[]
+}) {
+  const color  = getLanguageColor(repo.language ?? '')
+  const total  = repoLanguages ? Object.values(repoLanguages).reduce((s, v) => s + v, 0) : 0
+  const health = calcRepoHealth(repo)
+
+  // Filter commits that belong to this repo
+  const repoCommits = recentCommits.filter(c => c.repoName === repo.name)
 
   return (
     <motion.div
       key={repo.id}
-      className="absolute top-1/2 right-4 -translate-y-1/2 hud-panel rounded overflow-hidden w-72"
-      style={{ zIndex: 20 }}
-      initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }}
-      transition={{ duration: 0.2 }}
+      className="absolute top-6 bottom-6 right-6 hud-panel rounded-xl overflow-hidden w-88 flex flex-col backdrop-blur-3xl"
+      style={{ zIndex: 60, border: `1px solid ${color}33`, boxShadow: `0 0 40px ${color}15` }}
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 50 }}
+      transition={{ duration: 0.4, type: 'spring', damping: 25 }}
     >
-      <div className="h-0.5 w-full" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="min-w-0 mr-2">
-            <p className="font-mono text-xs text-gray-600 tracking-widest">REPO PLANET</p>
-            <p className="font-orbitron font-bold text-base leading-tight text-white truncate">{repo.name}</p>
+      {/* Color accent bar */}
+      <div className="h-1 w-full flex-shrink-0"
+        style={{ background: `linear-gradient(90deg, ${color}, transparent)`, boxShadow: `0 0 12px ${color}66` }} />
+
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-white/[0.02]">
+
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 mr-4">
+            <p className="font-mono text-[10px] text-gray-600 tracking-[0.3em] mb-1">STATION RECORD</p>
+            <h2 className="font-orbitron font-bold text-xl leading-tight text-white tracking-wide">
+              {repo.name}
+            </h2>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="w-2 h-2 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+              <span className="font-mono text-xs" style={{ color: color }}>{repo.language || 'Plain Text'}</span>
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-700 hover:text-white font-mono text-xs flex-shrink-0">✕</button>
+          <button
+            onClick={onClose}
+            className="text-gray-600 hover:text-white font-mono text-lg transition-colors p-2"
+          >
+            ✕
+          </button>
         </div>
+
+        {/* Description */}
         {repo.description && (
-          <p className="font-mono text-xs text-gray-500 mb-3 leading-relaxed">{repo.description}</p>
+          <p className="font-mono text-xs text-gray-400 leading-relaxed border-l-2 pl-4 py-1"
+            style={{ borderColor: `${color}44` }}>
+            {repo.description}
+          </p>
         )}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs mb-3">
-          <span className="text-gray-600">Stars</span>
-          <span className="text-yellow-400">★ {repo.stargazers_count.toLocaleString()}</span>
-          <span className="text-gray-600">Forks</span>
-          <span className="text-white">⑂ {repo.forks_count.toLocaleString()}</span>
-          <span className="text-gray-600">Last pushed</span>
-          <span className="text-white">{fmtDays(repo.pushed_at)}</span>
-          <span className="text-gray-600">Open issues</span>
-          <span className="text-orange-400">{repo.open_issues_count}</span>
-          {repo.language && <>
-            <span className="text-gray-600">Primary lang</span>
-            <span style={{ color }}>{repo.language}</span>
-          </>}
-        </div>
 
-        {repoLanguages && total > 0 && (
-          <div className="mb-3">
-            <p className="font-mono text-xs text-gray-700 tracking-widest mb-1.5">LANGUAGES (moons)</p>
-            {Object.entries(repoLanguages)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 5)
-              .map(([lang, bytes]) => (
-                <div key={lang} className="flex items-center gap-2 mb-1">
-                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ background: getLanguageColor(lang) }} />
-                  <div className="flex-1 bg-white/5 rounded-full h-1 overflow-hidden">
-                    <div className="h-full rounded-full"
-                      style={{ width: `${(bytes / total * 100).toFixed(0)}%`, background: getLanguageColor(lang) }} />
-                  </div>
-                  <span className="font-mono text-xs text-gray-500 w-20 text-right truncate">{lang}</span>
-                  <span className="font-mono text-xs text-gray-700 w-8 text-right">
-                    {(bytes / total * 100).toFixed(0)}%
-                  </span>
-                </div>
-              ))}
+        {/* Health score card */}
+        <div className="rounded-xl p-4 space-y-3 bg-black/40 border border-white/5 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] text-gray-500 tracking-widest uppercase opacity-70">Sustainability</span>
+            <div className="flex items-center gap-2">
+              <span className="font-orbitron font-bold text-lg" style={{ color: health.color }}>
+                {health.score}
+              </span>
+              <span className="font-mono text-[10px] text-gray-700">/ 100</span>
+            </div>
           </div>
-        )}
 
-        {repo.stargazers_count >= 50 && (
-          <div className="flex items-center gap-2 px-2 py-1 rounded mb-3"
-            style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.2)' }}>
-            <span className="text-yellow-400 text-xs">🪐</span>
-            <span className="font-mono text-xs text-yellow-600">
-              Planetary rings — {repo.stargazers_count}+ stars
+          <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: health.color, boxShadow: `0 0 12px ${health.color}66` }}
+              initial={{ width: 0 }}
+              animate={{ width: `${health.score}%` }}
+              transition={{ duration: 1.2, ease: 'easeOut', delay: 0.2 }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase font-bold tracking-widest" style={{ color: health.color }}>
+              {health.label}
+            </span>
+            <span className="font-mono text-[9px] text-gray-600 ml-auto">
+              Level {Math.ceil(health.score / 20)} Node
             </span>
           </div>
+        </div>
+
+        {/* Optimization Log — New Task List */}
+        {health.breakdown.some(c => !c.earned) && (
+          <div className="space-y-3">
+            <p className="font-mono text-[10px] text-gray-600 tracking-widest uppercase mb-1">Optimization Log</p>
+            <div className="bg-black/30 border border-white/5 rounded-lg p-4 space-y-2">
+              {health.breakdown
+                .filter(c => !c.earned)
+                .map((task, i) => (
+                  <div key={i} className="flex items-start gap-3 group">
+                    <div className="mt-1 w-3 h-3 rounded flex-shrink-0 border border-white/20 group-hover:border-white/40 transition-colors flex items-center justify-center">
+                       {/* Unchecked box style */}
+                    </div>
+                    <span className="font-mono text-[10px] text-gray-400 group-hover:text-white transition-colors leading-tight">
+                      {task.label.includes('description') ? 'Add repository description' :
+                       task.label.includes('30 days') ? 'Perform fresh data sync (Push 30d)' :
+                       task.label.includes('90 days') ? 'Perform fresh data sync (Push 90d)' :
+                       task.label.includes('stars') ? 'Expand system influence (Gain Stars)' :
+                       task.label}
+                    </span>
+                  </div>
+                ))}
+              {health.breakdown.every(c => c.earned) && (
+                <div className="flex items-center gap-3 text-emerald-500">
+                  <div className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                    <span className="text-[8px]">✓</span>
+                  </div>
+                  <span className="font-mono text-[10px] uppercase tracking-widest">Core System Optimized</span>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
-        <a href={repo.html_url} target="_blank" rel="noopener noreferrer"
-          className="block text-center font-mono text-xs py-2 rounded transition-all"
-          style={{ color, border: `1px solid ${color}33`, background: `${color}11` }}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">Growth</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-orbitron text-yellow-400">★ {repo.stargazers_count.toLocaleString()}</span>
+              <span className="text-[10px] font-mono text-gray-700">stars</span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">Forks</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-orbitron text-blue-400">⑂ {repo.forks_count.toLocaleString()}</span>
+              <span className="text-[10px] font-mono text-gray-700">nodes</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Velocity Ring Section */}
+        <div className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-white/5 group hover:border-white/10 transition-colors">
+          <div className="space-y-1">
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">Pulse</p>
+            <p className="text-xs font-mono text-white opacity-80">{repoCommits.length} Recent Syncs</p>
+            <p className="text-[9px] font-mono text-gray-700">Frequency: Last {fmtDays(repo.pushed_at)}</p>
+          </div>
+          <div className="scale-110">
+            <VelocityRing commits={repoCommits} color={color} />
+          </div>
+        </div>
+
+        {/* Language Composition */}
+        {repoLanguages && total > 0 && (
+          <div className="space-y-3">
+            <p className="font-mono text-[10px] text-gray-600 tracking-widest uppercase">Composition</p>
+            <div className="space-y-2">
+              {Object.entries(repoLanguages)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 4)
+                .map(([lang, bytes]) => {
+                  const lColor = getLanguageColor(lang)
+                  return (
+                    <div key={lang} className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-gray-400">{lang}</span>
+                        <span style={{ color: lColor }}>{(bytes / total * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden">
+                        <div className="h-full" style={{ width: `${(bytes / total * 100)}%`, background: lColor }} />
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex-shrink-0 p-6 bg-black/40 border-t border-white/5 flex gap-3">
+        <a
+          href={repo.html_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-2 font-mono text-[10px] py-3 rounded-lg transition-all tracking-widest hover:scale-[1.02] active:scale-[0.98]"
+          style={{ color, border: `1px solid ${color}44`, background: `${color}15` }}
         >
-          Open on GitHub →
+          CONNECT TO CORE ↗
         </a>
       </div>
     </motion.div>
@@ -219,6 +467,13 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
   const [commitTooltip, setCommitTooltip]       = useState<CommitTooltipState | null>(null)
   const [beltPanelOpen, setBeltPanelOpen]       = useState(false)
   const [beltHoverPos, setBeltHoverPos]         = useState<{ x: number; y: number } | null>(null)
+  const [perfLevel, setPerfLevel] = useState<'low' | 'high'>('high')
+
+  useEffect(() => {
+    const isLowPower = (typeof navigator !== 'undefined' && (navigator.hardwareConcurrency || 8) <= 4) || 
+                       (typeof window !== 'undefined' && window.innerWidth < 768)
+    if (isLowPower) setPerfLevel('low')
+  }, [])
 
   // ── Computed nebula state ──────────────────────────────────────────────────
   const ownRepos    = useMemo(() => data.repos.filter(r => !r.fork), [data.repos])
@@ -227,9 +482,9 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
   const extraColors  = data.languages.slice(1, 5).map(l => l.color)
 
   const monthsInactive = useMemo(() => {
-    const lastPush = data.lastCommitDate || data.repos[0]?.pushed_at || data.user.created_at
+    const lastPush = data.repos[0]?.pushed_at ?? data.user.created_at
     return Math.floor((Date.now() - new Date(lastPush).getTime()) / (1000 * 60 * 60 * 24 * 30))
-  }, [data.lastCommitDate, data.repos, data.user.created_at])
+  }, [data.repos, data.user.created_at])
 
   const nebulaType = useMemo(() => resolveNebulaType({
     totalStars:      data.totalStars,
@@ -237,9 +492,11 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
     languageCount:   data.languages.length,
     totalRepos:      data.repos.length,
     accountAgeYears: data.accountAgeYears,
-    isHighStreak:    data.isHighStreak,
+    isHighStreak:    false,
   }), [data, monthsInactive])
 
+  const nebulaSpread  = Math.max(25, Math.min(80, data.accountAgeYears * 12 + 20))
+  const nebulaDensity = Math.min(1, data.recentCommits.length / 15)
   const nebulaBadge   = NEBULA_LABELS[nebulaType] ?? NEBULA_LABELS.standard
 
   // ── Mode persistence ───────────────────────────────────────────────────────
@@ -259,15 +516,21 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
   }, [setViewMode, setSelectedPlanetIndex])
 
   // ── Tier computation ───────────────────────────────────────────────────────
-  const { tier1, tier2, tier3, tier4 } = useMemo(() => {
-    const sorted = [...ownRepos].sort((a, b) => b.stargazers_count - a.stargazers_count)
+  const TWO_YEARS_MS = 2 * 365.25 * 24 * 60 * 60 * 1000
+
+  const { tier1, tier2, tier3, tier4, graveyard } = useMemo(() => {
+    const now   = Date.now()
+    const dead  = ownRepos.filter(r => now - new Date(r.pushed_at).getTime() > TWO_YEARS_MS)
+    const alive = ownRepos.filter(r => now - new Date(r.pushed_at).getTime() <= TWO_YEARS_MS)
+    const sorted = [...alive].sort((a, b) => b.stargazers_count - a.stargazers_count)
     return {
-      tier1: sorted.slice(0, 5),
-      tier2: sorted.slice(5, 15),
-      tier3: sorted.slice(15, 30),
-      tier4: sorted.slice(30),
+      tier1:     sorted.slice(0, 5),
+      tier2:     sorted.slice(5, 15),
+      tier3:     sorted.slice(15, 30),
+      tier4:     sorted.slice(30),
+      graveyard: dead,
     }
-  }, [ownRepos])
+  }, [ownRepos, TWO_YEARS_MS])
 
   const MIN_ORBIT     = 8, ORBIT_STEP = 4.5
   const asteroidInner = MIN_ORBIT + data.languages.length * ORBIT_STEP + 2
@@ -277,7 +540,10 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
   const panelPinned   = selectedLanguage !== null
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative bg-[#020205]">
+      {/* Technical Grid Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" 
+           style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
       {/* View mode toggle */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 hud-panel rounded-full px-1 py-1">
         {(['repos', 'langs'] as ViewMode[]).map(m => (
@@ -326,26 +592,20 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
       )}
 
       <Canvas
-        camera={{ position: [0, 20, 60], fov: 60, near: 0.1, far: 2000 }}
-        gl={{ antialias: true, alpha: false }}
-        dpr={[1, 2]}
-        style={{ background: '#000008' }}
+        camera={{ position: [0, 40, 140], fov: 45, near: 0.1, far: 2000 }}
+        gl={{ antialias: true, alpha: true }}
+        dpr={[1, 1.5]}
       >
+        <color attach="background" args={['#020205']} />
         <AdaptiveDpr pixelated />
         <ambientLight intensity={isEmpty ? 0.12 : 0.05} />
 
         <Suspense fallback={null}>
-          <BackgroundStars />
-
-          {/* Procedural nebula — seeded by username, unique per developer */}
-          <Nebula
-            username={data.username}
-            dominantLanguage={data.dominantLanguage}
-            nebulaType={nebulaType}
-            totalCommits={data.totalCommits}
-            accountAgeYears={data.accountAgeYears}
-            extraColors={extraColors}
-          />
+          {/* Pure minimal background stars */}
+          <BackgroundStars perfLevel={perfLevel} />
+          
+          {/* Subtle accent light for the 'system' center */}
+          <pointLight position={[0, 0, 0]} intensity={1.5} color={primaryColor} distance={150} decay={2} />
 
           {/* Ghost planets for < 5 repos */}
           {isEmpty && (
@@ -372,11 +632,16 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
                   orbitRadius={T1_BASE + i * T1_STEP}
                   offset={(i / tier1.length) * Math.PI * 2}
                   index={i}
-                  repoLanguages={data.repoLanguages[repo.name]}
+                  repoLanguages={data.repoLanguages?.[repo.name]}
+                  commitMonths={data.commitActivity?.[repo.name]}
+                  openPRs={data.openPRs?.[repo.name]}
                   onSelect={setSelectedRepo}
                   isSelected={selectedRepo?.id === repo.id}
                 />
               ))}
+              
+              {viewMode === 'repos' && <ConstellationLines tier1={tier1} />}
+              
               {tier2.map((repo, i) => (
                 <RepoPlanet
                   key={repo.id} repo={repo} tier={2}
@@ -405,6 +670,19 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
                   onClick={() => { setBeltPanelOpen(true); setBeltHoverPos(null) }}
                 />
               )}
+
+              {/* Dead repos — drifting in the graveyard zone beyond the belt */}
+              {graveyard.map((repo, i) => (
+                <RepoPlanet
+                  key={repo.id} repo={repo} tier={3}
+                  orbitRadius={GY_BASE + i * GY_STEP}
+                  offset={(i / Math.max(graveyard.length, 1)) * Math.PI * 2 + 2.2}
+                  index={i}
+                  isGraveyard
+                  onSelect={setSelectedRepo}
+                  isSelected={selectedRepo?.id === repo.id}
+                />
+              ))}
             </>
           )}
 
@@ -415,7 +693,9 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
               orbitRadius={T1_BASE + i * T1_STEP}
               offset={(i / Math.max(tier1.length, 1)) * Math.PI * 2}
               index={i}
-              repoLanguages={data.repoLanguages[repo.name]}
+              repoLanguages={data.repoLanguages?.[repo.name]}
+              commitMonths={data.commitActivity?.[repo.name]}
+              openPRs={data.openPRs?.[repo.name]}
               onSelect={setSelectedRepo}
               isSelected={selectedRepo?.id === repo.id}
             />
@@ -494,7 +774,8 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
         {viewMode === 'repos' && selectedRepo && (
           <RepoDetailPanel
             repo={selectedRepo}
-            repoLanguages={data.repoLanguages[selectedRepo.name]}
+            repoLanguages={data.repoLanguages?.[selectedRepo.name]}
+            recentCommits={data.recentCommits}
             onClose={() => setSelectedRepo(null)}
           />
         )}
