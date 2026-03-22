@@ -257,11 +257,14 @@ function VelocityRing({
 }
 
 // ── Repo detail panel ─────────────────────────────────────────────────────────
-function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits }: {
+function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, tierNumber, rank, totalRepos }: {
   repo: GitHubRepo
   onClose: () => void
   repoLanguages?: Record<string, number>
   recentCommits: { sha: string; message: string; date: string; repoName: string; repoUrl: string }[]
+  tierNumber: 1 | 2 | 3 | 4
+  rank: number
+  totalRepos: number
 }) {
   const color  = getLanguageColor(repo.language ?? '')
   const total  = repoLanguages ? Object.values(repoLanguages).reduce((s, v) => s + v, 0) : 0
@@ -273,19 +276,23 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits }: {
   return (
     <motion.div
       key={repo.id}
-      className="absolute top-6 bottom-6 right-6 hud-panel rounded-xl overflow-hidden w-88 flex flex-col backdrop-blur-3xl"
-      style={{ zIndex: 60, border: `1px solid ${color}33`, boxShadow: `0 0 40px ${color}15` }}
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 50 }}
-      transition={{ duration: 0.4, type: 'spring', damping: 25 }}
+      className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-0 md:left-auto md:w-96 z-[120] bg-black/60 md:bg-black/60 backdrop-blur-[40px] border-t md:border-t-0 md:border-l border-white/10 flex flex-col shadow-[0_-20px_80px_rgba(0,0,0,0.8)] md:shadow-[-20px_0_80px_rgba(0,0,0,0.6)] rounded-t-[2.5rem] md:rounded-l-3xl md:rounded-tr-none overflow-hidden max-h-[90vh] md:max-h-none"
+      initial={{ y: "100%", x: 0 }}
+      animate={{ y: 0, x: 0 }}
+      exit={{ y: "100%", x: 0 }}
+      transition={{ duration: 0.6, type: "spring", damping: 30, stiffness: 100 }}
     >
+      {/* Mobile Handle area */}
+      <div className="md:hidden w-full flex flex-col items-center pt-3 pb-2 cursor-pointer" onClick={onClose}>
+        <div className="w-12 h-1 bg-white/20 rounded-full mb-2" />
+        <span className="font-mono text-[8px] text-gray-600 tracking-[0.3em] uppercase">Close Station Record</span>
+      </div>
       {/* Color accent bar */}
       <div className="h-1 w-full flex-shrink-0"
         style={{ background: `linear-gradient(90deg, ${color}, transparent)`, boxShadow: `0 0 12px ${color}66` }} />
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-white/[0.02]">
+      <div className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6 space-y-6 custom-scrollbar">
 
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -379,6 +386,118 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits }: {
             </div>
           </div>
         )}
+
+        {/* ── Redistribution Logic ── */}
+        {(() => {
+          const TIER_META: Record<number, { label: string; color: string; bg: string; border: string }> = {
+            1: { label: 'FEATURED',    color: '#ffd700', bg: 'rgba(255,215,0,0.08)',  border: 'rgba(255,215,0,0.25)' },
+            2: { label: 'STANDARD',    color: '#00e5ff', bg: 'rgba(0,229,255,0.08)',  border: 'rgba(0,229,255,0.25)' },
+            3: { label: 'SMALL WORLD', color: '#ff8844', bg: 'rgba(255,136,68,0.08)', border: 'rgba(255,136,68,0.25)' },
+            4: { label: 'ASTEROID',    color: '#556677', bg: 'rgba(85,102,119,0.08)', border: 'rgba(85,102,119,0.25)' },
+          }
+          const isHealthy = health.score >= 40
+          const FEATURES = [
+            { name: 'Atmosphere Glow',     tiers: [1],       howTo: 'Be in the top 5 repos by stars to get a glowing atmosphere effect around your planet.', active: true },
+            { name: 'PR Moons',            tiers: [1],       howTo: 'Top 5 repos show open Pull Requests as orbiting moons around the planet.', active: true },
+            { name: 'Constellation Lines', tiers: [1],       howTo: 'Tier 1 planets are connected by constellation lines, forming a visual star map.', active: true },
+            { name: 'Velocity Ring',       tiers: [1, 2],    howTo: 'Top 15 repos display a commit velocity ring showing recent activity pulses.', active: true },
+            { name: 'Health Badge',        tiers: [1, 2, 3], howTo: isHealthy
+                ? 'Your repo health score is above 40 — the badge is active and green.'
+                : 'Health score is below 40 (struggling). Add a description, push code recently, and gain stars to restore it.',
+              active: isHealthy },
+            { name: 'Planet Body',         tiers: [1, 2, 3], howTo: 'Top 30 repos are rendered as full planet bodies. Below that, repos become belt particles.', active: true },
+            { name: 'Belt Particle',       tiers: [4],       howTo: 'Repos ranked 30+ are shown as tiny particles in the asteroid belt.', active: true },
+          ]
+          const UPGRADES: Record<number, string> = {
+            2: `Reach top 5 by stars to become Featured. You're ranked #${rank} — need ${Math.max(rank - 5, 0)} more spots.`,
+            3: `Reach top 15 by stars to reach Standard. You're ranked #${rank} — need ${Math.max(rank - 15, 0)} more spots.`,
+            4: `Reach top 30 by stars to reach Small World. You're ranked #${rank} — need ${Math.max(rank - 30, 0)} more spots.`,
+          }
+          const meta = TIER_META[tierNumber]
+          const pct = totalRepos > 1 ? ((totalRepos - rank) / (totalRepos - 1)) * 100 : 100
+
+          return (
+            <div className="rounded-xl p-4 space-y-4 border shadow-2xl" style={{ background: meta.bg, borderColor: meta.border }}>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] text-gray-500 tracking-widest uppercase">Redistribution</span>
+                <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-widest"
+                  style={{ color: meta.color, background: `${meta.color}18`, border: `1px solid ${meta.color}40` }}>
+                  TIER {tierNumber} · {meta.label}
+                </span>
+              </div>
+
+              {/* Rank */}
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <span className="font-orbitron text-sm font-bold" style={{ color: meta.color }}>
+                    Ranked #{rank}
+                  </span>
+                  <span className="font-mono text-[10px] text-gray-500">of {totalRepos} repos</span>
+                </div>
+                <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: `linear-gradient(90deg, ${meta.color}, ${meta.color}88)`, boxShadow: `0 0 10px ${meta.color}44` }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+                  />
+                </div>
+                <p className="font-mono text-[9px] text-gray-600">
+                  Sorted by ★ stargazers — {repo.stargazers_count.toLocaleString()} stars
+                </p>
+              </div>
+
+              {/* Features unlocked by tier */}
+              <div className="space-y-3">
+                <p className="font-mono text-[9px] text-gray-500 tracking-widest uppercase">Visual Features</p>
+                <div className="space-y-1.5">
+                  {FEATURES.map((f) => {
+                    const tierMatch = f.tiers.includes(tierNumber)
+                    const unlocked = tierMatch && f.active
+                    const failed = tierMatch && !f.active  // tier matches but health failed
+                    return (
+                      <div key={f.name} className={`rounded-lg p-2.5 transition-colors ${
+                        unlocked ? 'bg-white/[0.03]' : failed ? 'bg-red-500/[0.04]' : 'bg-transparent'
+                      }`}>
+                        <div className={`flex items-center gap-2 text-[10px] font-mono ${
+                          unlocked ? 'text-white/80' : failed ? 'text-red-400/70' : 'text-gray-700'
+                        }`}>
+                          <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[8px] flex-shrink-0 ${
+                            unlocked
+                              ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                              : failed
+                                ? 'bg-red-500/20 border border-red-500/40 text-red-400'
+                                : 'border border-white/10'
+                          }`}>
+                            {unlocked ? '✓' : failed ? '✕' : ''}
+                          </span>
+                          <span className={!tierMatch && !failed ? 'line-through' : ''}>{f.name}</span>
+                          {failed && <span className="text-[8px] text-red-400/50 ml-auto">NEEDS FIX</span>}
+                        </div>
+                        <p className={`font-mono text-[8px] leading-relaxed mt-1 ml-[22px] ${
+                          unlocked ? 'text-gray-500' : failed ? 'text-red-400/40' : 'text-gray-700/50'
+                        }`}>
+                          {f.howTo}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Upgrade hint */}
+              {tierNumber > 1 && (
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-black/30 border border-white/5">
+                  <span className="text-[10px] mt-0.5">💡</span>
+                  <p className="font-mono text-[9px] text-gray-400 leading-relaxed">
+                    {UPGRADES[tierNumber]}
+                  </p>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
@@ -544,33 +663,16 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
       {/* Technical Grid Overlay */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.04]" 
            style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-      {/* View mode toggle */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 hud-panel rounded-full px-1 py-1">
-        {(['repos', 'langs'] as ViewMode[]).map(m => (
-          <button
-            key={m}
-            onClick={() => handleSetMode(m)}
-            className="px-4 py-1.5 rounded-full font-mono text-xs tracking-widest transition-all"
-            style={{
-              background: viewMode === m ? 'rgba(0,229,255,0.15)' : 'transparent',
-              color:      viewMode === m ? '#00e5ff' : '#2a4a5a',
-              border:     viewMode === m ? '1px solid rgba(0,229,255,0.4)' : '1px solid transparent',
-              boxShadow:  viewMode === m ? '0 0 10px rgba(0,229,255,0.2)' : 'none',
-            }}
-          >
-            {m === 'repos' ? '⬤ REPOS' : '◎ LANGS'}
-          </button>
-        ))}
-      </div>
+      {/* Redundant toggle removed — Now handled by HUD.tsx */}
 
-      {/* Nebula type badge — bottom left */}
+      {/* Nebula type badge — Relocated to avoid footer overlap */}
       <motion.div
-        className="absolute bottom-16 left-4 z-10 flex items-center gap-2 pointer-events-none"
+        className="absolute top-24 left-1/2 -translate-x-1/2 md:top-auto md:bottom-28 md:left-8 md:translate-x-0 z-10 flex items-center gap-2 pointer-events-none"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}
       >
         <div className="w-1.5 h-1.5 rounded-full"
-          style={{ background: nebulaBadge.color, boxShadow: `0 0 6px ${nebulaBadge.color}` }} />
-        <span className="font-mono text-xs tracking-widest"
+          style={{ background: nebulaBadge.color, boxShadow: `0 0 8px ${nebulaBadge.color}` }} />
+        <span className="font-mono text-[10px] tracking-[0.3em] uppercase"
           style={{ color: nebulaBadge.color + 'aa' }}>
           {nebulaBadge.label}
         </span>
@@ -771,14 +873,25 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
             onClose={() => { setSelectedLanguage(null); setSelectedPlanetIndex(null) }}
           />
         )}
-        {viewMode === 'repos' && selectedRepo && (
-          <RepoDetailPanel
-            repo={selectedRepo}
-            repoLanguages={data.repoLanguages?.[selectedRepo.name]}
-            recentCommits={data.recentCommits}
-            onClose={() => setSelectedRepo(null)}
-          />
-        )}
+        {viewMode === 'repos' && selectedRepo && (() => {
+          // Compute rank + tier for the selected repo
+          const TWO_YEARS = 2 * 365.25 * 24 * 60 * 60 * 1000
+          const alive = data.repos.filter((r: GitHubRepo) => !r.fork && Date.now() - new Date(r.pushed_at).getTime() <= TWO_YEARS)
+          const sorted = [...alive].sort((a: GitHubRepo, b: GitHubRepo) => b.stargazers_count - a.stargazers_count)
+          const rank = sorted.findIndex((r: GitHubRepo) => r.id === selectedRepo.id) + 1
+          const tierNum: 1 | 2 | 3 | 4 = rank <= 5 ? 1 : rank <= 15 ? 2 : rank <= 30 ? 3 : 4
+          return (
+            <RepoDetailPanel
+              repo={selectedRepo}
+              repoLanguages={data.repoLanguages?.[selectedRepo.name]}
+              recentCommits={data.recentCommits}
+              onClose={() => setSelectedRepo(null)}
+              tierNumber={tierNum}
+              rank={rank || 1}
+              totalRepos={sorted.length}
+            />
+          )
+        })()}
       </AnimatePresence>
 
       {/* Asteroid belt stats (langs mode) */}

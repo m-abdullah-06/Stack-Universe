@@ -45,23 +45,21 @@ function LangMoon({ color, moonSize, orbitRadius, offset, speed }: LangMoonProps
   )
 }
 
-// ── Storm cloud layer (struggling tier) ──────────────────────────────────────
-function StormLayer({ size }: { size: number }) {
+// ── Storm cloud layer (Simplified for tech-only look) ──────────────────────────
+function StormLayer({ size, color }: { size: number; color: string }) {
   const ref = useRef<THREE.Mesh>(null)
   useFrame((state) => {
     if (ref.current) {
-      ref.current.rotation.y = state.clock.getElapsedTime() * 0.25
-      ref.current.rotation.z = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.08
+      ref.current.rotation.y = state.clock.getElapsedTime() * 0.15
     }
   })
   return (
-    <Sphere ref={ref} args={[size * 1.12, 16, 16]}>
-      <MeshDistortMaterial
-        color="#cc4400"
+    <Sphere ref={ref} args={[size * 1.05, 12, 12]}>
+      <meshBasicMaterial
+        color={color}
         transparent
-        opacity={0.22}
-        distort={0.35}
-        speed={2.5}
+        opacity={0.1}
+        wireframe
         depthWrite={false}
         blending={THREE.AdditiveBlending}
       />
@@ -69,14 +67,14 @@ function StormLayer({ size }: { size: number }) {
   )
 }
 
-// ── Dormant crack overlay ─────────────────────────────────────────────────────
-function CrackOverlay({ size }: { size: number }) {
+// ── Dormant/Technical Overlay ────────────────────────────────────────────────
+function TechnicalOverlay({ size, color }: { size: number; color: string }) {
   return (
-    <Sphere args={[size * 1.005, 8, 8]}>
+    <Sphere args={[size * 1.02, 12, 12]}>
       <meshBasicMaterial
-        color="#001122"
+        color={color}
         transparent
-        opacity={0.45}
+        opacity={0.15}
         wireframe
         depthWrite={false}
       />
@@ -125,11 +123,9 @@ function VelocityRing3D({ months, size, color }: VelocityRing3DProps) {
   )
 }
 
-function SimpleVelocityRing({ size, color }: {
-  size: number; color: string
-}) {
+function SimpleVelocityRing({ size, color }: { size: number; color: string }) {
   return (
-    <Ring args={[size * 1.5, size * 1.52, 64]} rotation={[-Math.PI / 2, 0, 0]}>
+    <Ring args={[size * 1.4, size * 1.41, 32]} rotation={[-Math.PI / 2, 0, 0]}>
       <meshBasicMaterial
         color={color}
         transparent
@@ -341,15 +337,15 @@ export function RepoPlanet({
 
         {/* Storm clouds — struggling tier 1 only */}
         {health.tier === 'struggling' && tier === 1 && !isGraveyard && (
-          <StormLayer size={size} />
+          <StormLayer size={size} color={planetColor} />
         )}
 
-        {/* Planet body — high-end Minimalist Glass */}
+        {/* Planet body — Optimized Technical Glow */}
         <Sphere
           ref={planetRef}
           args={[size, 
-            isGraveyard ? 16 : (tier === 1 ? 48 : tier === 2 ? 32 : 16),
-            isGraveyard ? 16 : (tier === 1 ? 48 : tier === 2 ? 32 : 16)]}
+            isGraveyard ? 12 : (tier === 1 ? 24 : tier === 2 ? 16 : 8),
+            isGraveyard ? 12 : (tier === 1 ? 24 : tier === 2 ? 16 : 8)]}
           onPointerOver={(e) => {
             e.stopPropagation()
             setHovered(true)
@@ -364,22 +360,20 @@ export function RepoPlanet({
             if (onSelect) onSelect(isSelected ? null : repo)
           }}
         >
-          <meshPhysicalMaterial
-            color={isGraveyard ? '#11111a' : planetColor}
-            emissive={isGraveyard ? '#05050a' : planetColor}
-            emissiveIntensity={hovered ? 0.8 : (isGraveyard ? 0.05 : 0.3)}
-            roughness={0.15}
-            metalness={0.05}
-            transmission={0.6}
-            thickness={2}
-            transparent={true}
-            opacity={0.9}
+          <meshStandardMaterial
+            color={isGraveyard ? '#0a0a10' : planetColor}
+            emissive={isGraveyard ? '#000000' : planetColor}
+            emissiveIntensity={hovered ? 1.5 : (isGraveyard ? 0.05 : 0.4)}
+            roughness={0.2}
+            metalness={0.8}
+            transparent={tier === 1}
+            opacity={tier === 1 ? 0.85 : 1}
           />
         </Sphere>
 
-        {/* Crack overlay — struggling/dormant tier 1 OR all graveyard */}
+        {/* Technical Wireframe Overlay — struggling/dormant tier 1 OR all graveyard */}
         {((health.tier !== 'thriving' && tier === 1) || isGraveyard) && (
-          <CrackOverlay size={size} />
+          <TechnicalOverlay size={size} color={isGraveyard ? '#444455' : planetColor} />
         )}
 
         {/* Thriving clean inner glow */}

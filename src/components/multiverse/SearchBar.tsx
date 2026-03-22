@@ -47,51 +47,51 @@ export function SearchBar({ onSearch }: SearchBarProps) {
         className="relative w-full"
       >
         <div
-          className="relative flex items-center"
+          className="relative flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 group/search"
           style={{
-            background: 'rgba(0,0,15,0.9)',
-            border: `1px solid ${focused ? 'rgba(0,229,255,0.6)' : 'rgba(0,229,255,0.15)'}`,
-            borderRadius: '4px',
+            background: 'rgba(255,255,255,0.03)',
+            backdropFilter: 'blur(32px)',
+            border: focused ? '1px solid rgba(0,229,255,0.4)' : '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '12px',
             boxShadow: focused
-              ? '0 0 20px rgba(0,229,255,0.15), inset 0 0 20px rgba(0,0,0,0.5)'
+              ? '0 0 40px rgba(0,229,255,0.05), inset 0 0 20px rgba(0,0,0,0.2)'
               : 'none',
-            transition: 'all 0.2s',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
-          {/* @ prefix */}
-          <span className="pl-4 pr-1 font-orbitron text-space-cyan/40 text-lg select-none">
-            @
-          </span>
+          <div className="flex items-center flex-1">
+            {/* @ prefix */}
+            <span className="pl-4 pr-1 font-orbitron text-space-cyan/40 text-lg md:text-xl select-none">
+              @
+            </span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value)
+                setError('')
+              }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder="username"
+              className="flex-1 bg-transparent py-4 md:py-5 pr-4 font-orbitron text-lg md:text-xl text-white placeholder-gray-800 outline-none tracking-wide"
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+          </div>
 
-          <input
-            ref={inputRef}
-            type="text"
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value)
-              setError('')
-            }}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder="username"
-            className="flex-1 bg-transparent py-4 pr-4 font-orbitron text-lg text-white placeholder-gray-700 outline-none tracking-wide"
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-          />
-
-          {/* Submit button */}
+          {/* Submit button — Responsive */}
           <button
             type="submit"
-            className="mr-2 px-4 py-2 font-mono text-xs tracking-widest transition-all"
-            style={{
-              color: value ? '#00e5ff' : '#1a3a4a',
-              background: value ? 'rgba(0,229,255,0.1)' : 'transparent',
-              border: `1px solid ${value ? 'rgba(0,229,255,0.3)' : 'transparent'}`,
-              borderRadius: '2px',
-            }}
+            className={`mx-2 mb-2 sm:mb-0 sm:mr-2 px-6 py-3 sm:py-2.5 font-mono text-[10px] sm:text-xs tracking-[0.3em] transition-all duration-500 rounded-lg
+              ${value 
+                ? 'bg-space-cyan/90 text-black font-bold shadow-[0_0_25px_rgba(0,229,255,0.3)] hover:bg-space-cyan hover:scale-[1.02]' 
+                : 'bg-white/5 text-gray-700 pointer-events-none'
+              }`}
           >
-            LAUNCH →
+            INITIATE_WARP
           </button>
         </div>
 

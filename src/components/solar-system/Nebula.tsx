@@ -44,24 +44,24 @@ function seededRandom(seed: number) {
   }
 }
 
-// ─── Procedural Glow Texture ──────────────────────────────────────────────────
-function createGlowTexture() {
+// ─── Procedural Technical Point Texture ──────────────────────────────────────
+function createTechPointTexture() {
   const canvas = document.createElement('canvas')
-  canvas.width = 128
-  canvas.height = 128
+  canvas.width = 64
+  canvas.height = 64
   const context = canvas.getContext('2d')
   if (!context) return null
 
-  const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64)
-  // Much softer, more transparent edge for a "hulk" or "fog" look
-  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)')
-  gradient.addColorStop(0.1, 'rgba(255, 255, 255, 0.3)')
-  gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.05)')
-  gradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.01)')
-  gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
+  // Sharp center with subtle ring
+  context.beginPath()
+  context.arc(32, 32, 4, 0, Math.PI * 2)
+  context.fillStyle = '#ffffff'
+  context.fill()
 
-  context.fillStyle = gradient
-  context.fillRect(0, 0, 128, 128)
+  context.beginPath()
+  context.arc(32, 32, 16, 0, Math.PI * 2)
+  context.strokeStyle = 'rgba(255, 255, 255, 0.2)'
+  context.stroke()
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.needsUpdate = true
@@ -119,95 +119,32 @@ function makeRingField(count: number, rand: () => number, radius: number, thickn
   return arr
 }
 
-// ─── EMISSION NEBULA ─────────────────────────────────────────────────────────
+// ─── EMISSION NEBULA (Technical Rays) ─────────────────────────────────────────
 function EmissionNebula({ color, rand }: { color: string; rand: () => number }) {
   const hazeRef  = useRef<THREE.Points>(null)
-  const detailRef = useRef<THREE.Points>(null)
-  const rayRefs = useRef<THREE.Points[]>([])
-  const texture  = useMemo(() => createGlowTexture(), [])
-
-  const hazePos   = useMemo(() => makeParticleField(2000, rand, 80, 200, 0.2), [rand])
-  const detailPos = useMemo(() => makeParticleField(800, rand, 60, 140, 0.4), [rand])
-
-  const rays = useMemo(() => Array.from({ length: 8 }, (_, i) => {
-    const angle = (i / 8) * Math.PI * 2 + rand() * 0.4
-    const count = 150 + Math.floor(rand() * 100)
-    return { 
-      angle, 
-      pos: makeBeamField(count, rand, 150 + rand() * 100, 4 + rand() * 6),
-      speed: 0.05 + rand() * 0.05
-    }
-  }), [rand])
+  const texture  = useMemo(() => createTechPointTexture(), [])
+  const hazePos  = useMemo(() => makeParticleField(800, rand, 80, 240, 0.05), [rand])
 
   useFrame((state) => {
-    const t = state.clock.getElapsedTime()
-    if (hazeRef.current) hazeRef.current.rotation.y = t * 0.002
-    if (detailRef.current) detailRef.current.rotation.y = -t * 0.003
-    rayRefs.current.forEach((ray, i) => {
-      if (ray) {
-        ray.position.y = Math.sin(t * 0.2 + i) * 5
-        ray.rotation.y = Math.sin(t * 0.1 + i) * 0.02
-      }
-    })
+    if (hazeRef.current) hazeRef.current.rotation.y = state.clock.getElapsedTime() * 0.005
   })
 
   return (
-    <group>
-      <points ref={hazeRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[hazePos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color={color}
-          size={35}
-          sizeAttenuation
-          transparent
-          opacity={0.01}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-      <points ref={detailRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[detailPos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color={color}
-          size={8}
-          sizeAttenuation
-          transparent
-          opacity={0.02}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-
-      {/* Particle Rays instead of solid beams */}
-      {rays.map((ray, i) => (
-        <points
-          key={i}
-          ref={el => { if (el) rayRefs.current[i] = el }}
-          position={[Math.cos(ray.angle) * 35, 0, Math.sin(ray.angle) * 35]}
-          rotation={[0, -ray.angle + Math.PI / 2, 0]}
-        >
-          <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[ray.pos, 3]} />
-          </bufferGeometry>
-          <pointsMaterial
-            map={texture}
-            color={color}
-            size={12}
-            sizeAttenuation
-            transparent
-            opacity={0.015} // Ghostly ray
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </points>
-      ))}
-    </group>
+    <points ref={hazeRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[hazePos, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        map={texture}
+        color={color}
+        size={4}
+        sizeAttenuation
+        transparent
+        opacity={0.3}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+      />
+    </points>
   )
 }
 
@@ -217,7 +154,7 @@ function DarkNebula({ rand }: { rand: () => number }) {
   const dustRef = useRef<THREE.Points>(null)
   const hazePos = useMemo(() => makeParticleField(1500, rand, 70, 160, 0.2), [rand])
   const dustPos = useMemo(() => makeParticleField(800, rand, 40, 100, 0.5), [rand])
-  const texture = useMemo(() => createGlowTexture(), [])
+  const texture = useMemo(() => createTechPointTexture(), [])
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime()
@@ -262,7 +199,7 @@ function DarkNebula({ rand }: { rand: () => number }) {
 // ─── REFLECTION NEBULA ───────────────────────────────────────────────────────
 function ReflectionNebula({ colors, rand }: { colors: string[]; rand: () => number }) {
   const refs   = useRef<THREE.Points[]>([])
-  const texture = useMemo(() => createGlowTexture(), [])
+  const texture = useMemo(() => createTechPointTexture(), [])
   
   const layers = useMemo(() => colors.slice(0, 5).map((col, ci) => ({
     col,
@@ -307,7 +244,7 @@ function ReflectionNebula({ colors, rand }: { colors: string[]; rand: () => numb
 // ─── PLANETARY NEBULA ────────────────────────────────────────────────────────
 function PlanetaryNebula({ color, rand }: { color: string; rand: () => number }) {
   const ringRefs = useRef<THREE.Points[]>([])
-  const texture  = useMemo(() => createGlowTexture(), [])
+  const texture  = useMemo(() => createTechPointTexture(), [])
   
   const rings = useMemo(() => Array.from({ length: 4 }, (_, i) => ({
     pos: makeRingField(800 + i * 200, rand, 80 + i * 40, 6 + i * 2),
@@ -370,7 +307,7 @@ function PlanetaryNebula({ color, rand }: { color: string; rand: () => number })
 // ─── PROTOSTELLAR NEBULA ─────────────────────────────────────────────────────
 function ProtostellarNebula({ color, rand }: { color: string; rand: () => number }) {
   const ref = useRef<THREE.Points>(null)
-  const texture = useMemo(() => createGlowTexture(), [])
+  const texture = useMemo(() => createTechPointTexture(), [])
 
   // Push spiral much further out
   const pos = useMemo(() => {
@@ -419,7 +356,7 @@ function ProtostellarNebula({ color, rand }: { color: string; rand: () => number
 function SupernovaRemnant({ color, rand }: { color: string; rand: () => number }) {
   const ringRefs = useRef<THREE.Points[]>([])
   const shards    = useRef<THREE.Points>(null)
-  const texture   = useMemo(() => createGlowTexture(), [])
+  const texture   = useMemo(() => createTechPointTexture(), [])
 
   const rings = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
     pos: makeRingField(1200 + i * 300, rand, 70 + i * 30, 8 + i * 2),
@@ -482,50 +419,29 @@ function SupernovaRemnant({ color, rand }: { color: string; rand: () => number }
 // ─── STANDARD NEBULA ─────────────────────────────────────────────────────────
 function StandardNebula({ color, rand }: { color: string; rand: () => number }) {
   const hazeRef = useRef<THREE.Points>(null)
-  const detailRef = useRef<THREE.Points>(null)
-  const hazePos = useMemo(() => makeParticleField(1200, rand, 70, 150, 0.3), [rand])
-  const dustPos = useMemo(() => makeParticleField(600, rand, 40, 100, 0.5), [rand])
-  const texture = useMemo(() => createGlowTexture(), [])
+  const hazePos = useMemo(() => makeParticleField(500, rand, 80, 200, 0.1), [rand])
+  const texture = useMemo(() => createTechPointTexture(), [])
 
   useFrame((state) => {
-    const t = state.clock.getElapsedTime()
-    if (hazeRef.current) hazeRef.current.rotation.y = t * 0.002
-    if (detailRef.current) detailRef.current.rotation.y = -t * 0.004
+    if (hazeRef.current) hazeRef.current.rotation.y = state.clock.getElapsedTime() * 0.002
   })
 
   return (
-    <group>
-      <points ref={hazeRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[hazePos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color={color}
-          size={25}
-          sizeAttenuation
-          transparent
-          opacity={0.015}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-      <points ref={detailRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[dustPos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color={color}
-          size={8}
-          sizeAttenuation
-          transparent
-          opacity={0.03}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-    </group>
+    <points ref={hazeRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[hazePos, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        map={texture}
+        color={color}
+        size={3}
+        sizeAttenuation
+        transparent
+        opacity={0.15}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+      />
+    </points>
   )
 }
 

@@ -25,28 +25,27 @@ interface SingleStarProps {
   onHover: (commit: CommitData | null, screenX: number, screenY: number) => void
 }
 
-function SingleStar({ commit, index, isReal, onHover }: SingleStarProps) {
+function DataPacket({ commit, index, isReal, onHover }: SingleStarProps) {
   const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const pausedRef = useRef(false)
+  const tRef = useRef(Math.random())
 
   const traj = useMemo(() => {
     const seed = index * 137.5 + 42
     const a0 = seed % (Math.PI * 2)
-    const a1 = a0 + Math.PI * (0.5 + (index % 4) * 0.2)
-    const r0 = 18 + (index % 5) * 8
+    const a1 = a0 + Math.PI * (0.6 + (index % 3) * 0.3)
+    const r0 = 25 + (index % 6) * 12
     return {
       x0: Math.cos(a0) * r0,
-      y0: Math.sin(seed * 0.7) * 18,
+      y0: (Math.random() - 0.5) * 40,
       z0: Math.sin(a0) * r0,
-      x1: Math.cos(a1) * r0 * 0.35,
-      y1: Math.sin(seed * 0.7) * 7,
-      z1: Math.sin(a1) * r0 * 0.35,
-      speed: 0.035 + (index % 5) * 0.008,
+      x1: Math.cos(a1) * r0 * 0.2,
+      y1: (Math.random() - 0.5) * 10,
+      z1: Math.sin(a1) * r0 * 0.2,
+      speed: 0.02 + (index % 4) * 0.015,
     }
   }, [index])
-
-  const tRef = useRef(Math.random())
 
   useFrame((_, delta) => {
     if (pausedRef.current) return
@@ -59,18 +58,14 @@ function SingleStar({ commit, index, isReal, onHover }: SingleStarProps) {
     const z = traj.z0 + (traj.z1 - traj.z0) * t
     groupRef.current.position.set(x, y, z)
 
-    if (t < 0.98) {
-      const nt = Math.min(t + 0.015, 1)
-      const dir = new THREE.Vector3(
-        traj.x0 + (traj.x1 - traj.x0) * nt - x,
-        traj.y0 + (traj.y1 - traj.y0) * nt - y,
-        traj.z0 + (traj.z1 - traj.z0) * nt - z,
-      )
-      if (dir.lengthSq() > 0.0001) {
-        dir.normalize()
-        groupRef.current.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
-      }
-    }
+    // Snap rotation to movement direction
+    const nt = Math.min(t + 0.01, 1)
+    const dir = new THREE.Vector3(
+      traj.x0 + (traj.x1 - traj.x0) * nt - x,
+      traj.y0 + (traj.y1 - traj.y0) * nt - y,
+      traj.z0 + (traj.z1 - traj.z0) * nt - z,
+    ).normalize()
+    groupRef.current.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
   })
 
   const handlePointerOver = useCallback((e: ThreeEvent<PointerEvent>) => {
@@ -88,53 +83,35 @@ function SingleStar({ commit, index, isReal, onHover }: SingleStarProps) {
     onHover(null, 0, 0)
   }, [onHover])
 
-  const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
-    e.stopPropagation()
-    if (commit.repoUrl) {
-      window.open(commit.repoUrl, '_blank', 'noopener,noreferrer')
-    }
-  }, [commit])
+  const color = isReal ? '#00e5ff' : '#ff00e5'
 
   return (
     <group ref={groupRef}>
-      {/* Glow aura */}
-      <pointLight color={isReal ? '#00e5ff' : '#ff00e5'} intensity={hovered ? 2.5 : 0.8} distance={8} decay={2} />
-      
-      {/* Minimalist Pulse Head */}
-      <mesh>
-        <sphereGeometry args={[0.1, 8, 8]} />
-        <meshBasicMaterial 
-          color={isReal ? '#00e5ff' : '#ff00e5'} 
-          transparent
-          opacity={0.8}
-        />
-      </mesh>
-
-      {/* Subtle Data Stream Fade (short trail) */}
-      <mesh position={[0, 0, -0.6]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.01, 0.08, 1.2, 8, 1, true]} />
-        <meshBasicMaterial 
-          color={isReal ? '#00e5ff' : '#ff00e5'} 
-          transparent 
-          opacity={0.15} 
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Large invisible hover target */}
+      {/* Packet Head — sharp technical cube */}
       <mesh
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
-        onClick={handleClick}
+        onClick={(e) => { e.stopPropagation(); if (commit.repoUrl) window.open(commit.repoUrl, '_blank') }}
       >
-        <sphereGeometry args={[1.8, 12, 12]} />
-        <meshBasicMaterial
-          transparent
-          opacity={0}
-          depthWrite={false}
-        />
+        <boxGeometry args={[0.15, 0.15, 0.25]} />
+        <meshBasicMaterial color={color} />
       </mesh>
+
+      {/* Glitch Trail — Series of segments */}
+      {Array.from({ length: 4 }).map((_, i) => (
+        <mesh key={i} position={[0, 0, -(i + 1) * 0.4]}>
+          <boxGeometry args={[0.04, 0.04, 0.3]} />
+          <meshBasicMaterial 
+            color={color} 
+            transparent 
+            opacity={0.4 / (i + 1)} 
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      ))}
+
+      {/* Glow */}
+      <pointLight color={color} intensity={hovered ? 2 : 0.5} distance={5} decay={2} />
     </group>
   )
 }
@@ -187,7 +164,7 @@ export function ShootingStars({ commits, repos = [], onTooltip }: ShootingStarsP
   return (
     <>
       {stars.data.map((commit, i) => (
-        <SingleStar
+        <DataPacket
           key={commit.sha + i}
           commit={commit}
           index={i}
