@@ -16,7 +16,7 @@ import { ShootingStars } from './ShootingStars'
 import type { CommitTooltipState } from './ShootingStars'
 import { Nebula, resolveNebulaType } from './Nebula'
 import { EmptyUniverse } from './EmptyUniverse'
-import type { UniverseData, LanguageData, GitHubRepo, ViewMode } from '@/types'
+import type { UniverseData, LanguageData, GitHubRepo, ViewMode, ActionRun } from '@/types'
 import { useUniverseStore } from '@/store'
 import { getLanguageColor } from '@/lib/language-colors'
 import { calcRepoHealth } from '@/lib/repo-health'
@@ -257,11 +257,12 @@ function VelocityRing({
 }
 
 // ── Repo detail panel ─────────────────────────────────────────────────────────
-function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, tierNumber, rank, totalRepos }: {
+function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, actionRuns, tierNumber, rank, totalRepos }: {
   repo: GitHubRepo
   onClose: () => void
   repoLanguages?: Record<string, number>
   recentCommits: { sha: string; message: string; date: string; repoName: string; repoUrl: string }[]
+  actionRuns?: ActionRun[]
   tierNumber: 1 | 2 | 3 | 4
   rank: number
   totalRepos: number
@@ -272,6 +273,26 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, tierNumb
 
   // Filter commits that belong to this repo
   const repoCommits = recentCommits.filter(c => c.repoName === repo.name)
+
+  // CI/CD Metrics
+  const ciStats = useMemo(() => {
+    if (!actionRuns || actionRuns.length === 0) return null
+    const concluded = actionRuns.filter(r => r.status === 'completed')
+    const passCount = concluded.filter(r => r.conclusion === 'success').length
+    const failCount = concluded.filter(r => r.conclusion === 'failure').length
+    const total = actionRuns.length
+    const rate = concluded.length > 0 ? (passCount / concluded.length) * 100 : 0
+    
+    // Streak
+    let streak = 0
+    for (const run of actionRuns) {
+      if (run.status !== 'completed') continue
+      if (run.conclusion === 'success') streak++
+      else break
+    }
+
+    return { total, passCount, failCount, rate, latest: actionRuns[0], streak }
+  }, [actionRuns])
 
   return (
     <motion.div
@@ -364,7 +385,6 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, tierNumb
                 .map((task, i) => (
                   <div key={i} className="flex items-start gap-3 group">
                     <div className="mt-1 w-3 h-3 rounded flex-shrink-0 border border-white/20 group-hover:border-white/40 transition-colors flex items-center justify-center">
-                       {/* Unchecked box style */}
                     </div>
                     <span className="font-mono text-[10px] text-gray-400 group-hover:text-white transition-colors leading-tight">
                       {task.label.includes('description') ? 'Add repository description' :
@@ -375,17 +395,84 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, tierNumb
                     </span>
                   </div>
                 ))}
-              {health.breakdown.every(c => c.earned) && (
-                <div className="flex items-center gap-3 text-emerald-500">
-                  <div className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-                    <span className="text-[8px]">✓</span>
-                  </div>
-                  <span className="font-mono text-[10px] uppercase tracking-widest">Core System Optimized</span>
-                </div>
-              )}
             </div>
           </div>
         )}
+
+        {/* CI/CD Section */}
+        <div className="space-y-3">
+          <p className="font-mono text-[10px] text-gray-600 tracking-widest uppercase mb-1">CI/CD Pipeline</p>
+          <div className="bg-black/40 border border-white/5 rounded-xl p-4 space-y-5 shadow-2xl relative overflow-hidden group">
+            {ciStats ? (
+              <>
+                {/* Background accent */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[40px] rounded-full -mr-16 -mt-16 pointer-events-none" />
+                
+                <div className="flex items-start justify-between relative">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-mono text-gray-500 tracking-wider">Pass Rate</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-orbitron font-bold text-emerald-400">{ciStats.rate.toFixed(0)}%</span>
+                      <span className="text-[10px] font-mono text-gray-600 uppercase">Stability</span>
+                    </div>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <p className="text-[10px] font-mono text-gray-500 tracking-wider">Streak</p>
+                    <div className="flex items-center gap-2 justify-end">
+                      <span className="text-xl font-orbitron font-bold text-yellow-400">⚡{ciStats.streak}</span>
+                      <span className="text-[10px] font-mono text-gray-600 uppercase">Builds</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="space-y-2 relative">
+                  <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden border border-white/5">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400"
+                      style={{ boxShadow: '0 0 10px rgba(52, 211, 153, 0.4)' }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${ciStats.rate}%` }}
+                      transition={{ duration: 1.5, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <div className="flex justify-between font-mono text-[9px] text-gray-600">
+                    <span>{ciStats.passCount} PASSES</span>
+                    <span>{ciStats.total} TOTAL RUNS</span>
+                  </div>
+                </div>
+
+                {/* Latest run */}
+                <div className="pt-2 border-t border-white/5 space-y-2">
+                  <p className="text-[9px] font-mono text-gray-600 tracking-wider uppercase">Latest System Event</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                        ciStats.latest.status === 'in_progress' ? 'bg-yellow-400 animate-bounce' :
+                        ciStats.latest.conclusion === 'success' ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'
+                      }`} />
+                      <span className="text-[10px] font-mono text-white/80 truncate">{ciStats.latest.name}</span>
+                    </div>
+                    <span className={`text-[9px] font-mono uppercase font-bold ${
+                      ciStats.latest.status === 'in_progress' ? 'text-yellow-400' :
+                      ciStats.latest.conclusion === 'success' ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {ciStats.latest.status === 'in_progress' ? 'Running' : ciStats.latest.conclusion}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="py-4 text-center space-y-2">
+                <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center mx-auto mb-2 opacity-50">
+                  <span className="text-gray-500 text-xs text-center">∅</span>
+                </div>
+                <p className="font-orbitron text-[10px] text-gray-500 tracking-[0.2em] uppercase">No CI/CD configured</p>
+                <p className="font-mono text-[9px] text-gray-700">No recent GitHub Actions data detected.</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* ── Redistribution Logic ── */}
         {(() => {
@@ -737,6 +824,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
                   repoLanguages={data.repoLanguages?.[repo.name]}
                   commitMonths={data.commitActivity?.[repo.name]}
                   openPRs={data.openPRs?.[repo.name]}
+                  actionRuns={data.repoActions?.[repo.name]}
                   onSelect={setSelectedRepo}
                   isSelected={selectedRepo?.id === repo.id}
                 />
@@ -750,6 +838,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
                   orbitRadius={T2_BASE + i * T2_STEP}
                   offset={(i / tier2.length) * Math.PI * 2 + 0.5}
                   index={i}
+                  actionRuns={data.repoActions?.[repo.name]}
                   onSelect={setSelectedRepo}
                   isSelected={selectedRepo?.id === repo.id}
                 />
@@ -760,6 +849,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
                   orbitRadius={T3_BASE + i * T3_STEP}
                   offset={(i / tier3.length) * Math.PI * 2 + 1.0}
                   index={i}
+                  actionRuns={data.repoActions?.[repo.name]}
                   onSelect={setSelectedRepo}
                   isSelected={selectedRepo?.id === repo.id}
                 />
@@ -798,6 +888,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
               repoLanguages={data.repoLanguages?.[repo.name]}
               commitMonths={data.commitActivity?.[repo.name]}
               openPRs={data.openPRs?.[repo.name]}
+              actionRuns={data.repoActions?.[repo.name]}
               onSelect={setSelectedRepo}
               isSelected={selectedRepo?.id === repo.id}
             />
@@ -885,6 +976,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
               repo={selectedRepo}
               repoLanguages={data.repoLanguages?.[selectedRepo.name]}
               recentCommits={data.recentCommits}
+              actionRuns={data.repoActions?.[selectedRepo.name]}
               onClose={() => setSelectedRepo(null)}
               tierNumber={tierNum}
               rank={rank || 1}

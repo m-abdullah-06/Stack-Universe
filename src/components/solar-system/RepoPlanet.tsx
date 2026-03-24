@@ -4,7 +4,7 @@ import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sphere, Ring, MeshDistortMaterial, Html } from '@react-three/drei'
 import * as THREE from 'three'
-import type { GitHubRepo, RepoTier, PullRequest } from '@/types'
+import type { GitHubRepo, RepoTier, PullRequest, ActionRun } from '@/types'
 import { getLanguageColor } from '@/lib/language-colors'
 import { getDaysSinceActivity, getOrbitSpeed } from '@/lib/universe-score'
 import { calcRepoHealth } from '@/lib/repo-health'
@@ -176,6 +176,393 @@ function StaticPRIndicator({ pr, orbitRadius, index, total }: {
   )
 }
 
+// ── Build History Meteors ──────────────────────────────────────────────────
+function BuildMeteorParticle({ run, orbitRadius, index, total }: { run: ActionRun, orbitRadius: number, index: number, total: number }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  
+  const isSuccess = run.conclusion === 'success'
+  const isFailure = run.conclusion === 'failure'
+  const isInProgress = run.status === 'in_progress' || run.status === 'queued'
+  
+  const color = isInProgress ? '#ffd700' : (isSuccess ? '#00ff66' : '#ff2244')
+  const angle = (index / total) * Math.PI * 2
+
+  useFrame((state) => {
+    if (meshRef.current && isInProgress) {
+      // Gentle throb for in-progress dots
+      const s = 1 + Math.sin(state.clock.elapsedTime * 6 + index) * 0.4
+      meshRef.current.scale.setScalar(s)
+    }
+  })
+
+  return (
+    <group
+      position={[
+        Math.cos(angle) * orbitRadius,
+        0,
+        Math.sin(angle) * orbitRadius
+      ]}
+    >
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[0.06, 12, 12]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={2.5}
+          toneMapped={false}
+        />
+      </mesh>
+      {/* Point light so the dot actually glows through bloom */}
+      <pointLight color={color} intensity={0.3} distance={1.5} decay={2} />
+    </group>
+  )
+}
+
+function BuildMeteors({ runs, orbitRadius }: { runs: ActionRun[], orbitRadius: number }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const recentRuns = useMemo(() => runs.slice(0, 10), [runs])
+
+  useFrame((state, delta) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y -= delta * 0.15 // Slow orbital drifting opposite to planet rotation
+    }
+  })
+
+  if (recentRuns.length === 0) return null
+
+  return (
+    <group ref={groupRef}>
+      {/* Faint ring for the meteors to orbit along */}
+      <Ring args={[orbitRadius - 0.005, orbitRadius + 0.005, 32]} rotation={[-Math.PI / 2, 0, 0]}>
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.04} side={THREE.DoubleSide} />
+      </Ring>
+      
+      {recentRuns.map((run, i) => (
+        <BuildMeteorParticle 
+          key={run.id} 
+          run={run} 
+          orbitRadius={orbitRadius} 
+          index={i} 
+          total={recentRuns.length} 
+        />
+      ))}
+    </group>
+  )
+}
+
+// ── CI/CD Surface Overlays ───────────────────────────────────────────────────
+function CISuccessOverlay({ size }: { size: number }) {
+  return (
+    <Sphere args={[size * 1.03, 16, 16]}>
+      <meshBasicMaterial
+        color="#00ff66"
+        transparent
+        opacity={0.06}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </Sphere>
+  )
+}
+
+function CIFailureOverlay({ size }: { size: number }) {
+  const ref = useRef<THREE.Mesh>(null)
+  useFrame((state) => {
+    if (ref.current) {
+      // Flicker between 0.04 and 0.12 opacity
+      const mat = ref.current.material as THREE.MeshBasicMaterial
+      mat.opacity = 0.04 + Math.abs(Math.sin(state.clock.elapsedTime * 3.5)) * 0.08
+    }
+  })
+  return (
+    <Sphere ref={ref} args={[size * 1.03, 16, 16]}>
+      <meshBasicMaterial
+        color="#ff2244"
+        transparent
+        opacity={0.08}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </Sphere>
+  )
+}
+
+function CIInProgressRing({ size }: { size: number }) {
+  const ref = useRef<THREE.Mesh>(null)
+  useFrame((state) => {
+    if (ref.current) {
+      const mat = ref.current.material as THREE.MeshBasicMaterial
+      mat.opacity = 0.15 + Math.sin(state.clock.elapsedTime * 2) * 0.12
+    }
+  })
+  return (
+    <Ring ref={ref} args={[size * 1.25, size * 1.30, 64]} rotation={[-Math.PI / 2, 0, 0]}>
+      <meshBasicMaterial
+        color="#ffd700"
+        transparent
+        opacity={0.2}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+      />
+    </Ring>
+  )
+}
+
+// ── Live Build Comet ─────────────────────────────────────────────────────────
+function LiveBuildComet({ size, index }: { size: number; index: number }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const flashRef = useRef<THREE.Mesh>(null)
+  const tRef = useRef(Math.random())          // 0→1 progress
+  const flashT = useRef(-1)                   // <0 = no flash active
+
+  // Each comet gets a unique approach angle
+  const traj = useMemo(() => {
+    const angle = (index * 2.39996) + 0.7     // golden angle spread
+    const dist = size * 12                    // start distance from planet
+    return {
+      startX: Math.cos(angle) * dist,
+      startY: (Math.sin(angle * 1.7)) * dist * 0.3,
+      startZ: Math.sin(angle) * dist,
+      speed: 0.12 + (index % 3) * 0.04,      // loop cycle speed
+    }
+  }, [size, index])
+
+  const TRAIL_COUNT = 16
+  const TRAIL_SPACING = 0.06
+
+  useFrame((_, delta) => {
+    tRef.current += delta * traj.speed
+    if (tRef.current >= 1) {
+      // Reset and trigger flash
+      tRef.current = 0
+      flashT.current = 0
+    }
+
+    const t = tRef.current
+    // Ease-in so it accelerates toward the planet
+    const eased = t * t
+
+    if (groupRef.current) {
+      const x = traj.startX * (1 - eased)
+      const y = traj.startY * (1 - eased)
+      const z = traj.startZ * (1 - eased)
+      groupRef.current.position.set(x, y, z)
+
+      // Orient toward origin (planet center)
+      groupRef.current.lookAt(0, 0, 0)
+    }
+
+    // Flash animation
+    if (flashRef.current && flashT.current >= 0) {
+      flashT.current += delta * 4
+      const ft = flashT.current
+      if (ft > 1) {
+        flashT.current = -1
+        flashRef.current.scale.setScalar(0.01)
+        ;(flashRef.current.material as THREE.MeshBasicMaterial).opacity = 0
+      } else {
+        const scale = size * (1.2 + ft * 1.5)
+        flashRef.current.scale.setScalar(scale)
+        ;(flashRef.current.material as THREE.MeshBasicMaterial).opacity = 0.35 * (1 - ft)
+      }
+    }
+  })
+
+  return (
+    <>
+      {/* Comet body + trail */}
+      <group ref={groupRef}>
+        {/* Comet head */}
+        <mesh>
+          <sphereGeometry args={[0.08, 8, 8]} />
+          <meshStandardMaterial
+            color="#ffd700"
+            emissive="#ffd700"
+            emissiveIntensity={3}
+            toneMapped={false}
+          />
+        </mesh>
+        <pointLight color="#ffd700" intensity={0.6} distance={3} decay={2} />
+
+        {/* 16-point fading trail */}
+        {Array.from({ length: TRAIL_COUNT }).map((_, i) => (
+          <mesh key={i} position={[0, 0, -(i + 1) * TRAIL_SPACING]}>
+            <boxGeometry args={[0.04, 0.04, TRAIL_SPACING * 0.9]} />
+            <meshBasicMaterial
+              color="#ffd700"
+              transparent
+              opacity={0.6 / (i + 1)}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Impact flash at planet center */}
+      <mesh ref={flashRef} scale={0.01}>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshBasicMaterial
+          color="#ffd700"
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
+  )
+}
+
+// ── Deploy Streak Aura ───────────────────────────────────────────────────────
+function DeployStreakAura({ size, streak }: { size: number; streak: number }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const auraRef = useRef<THREE.Mesh>(null)
+
+  // Determine tier visuals
+  const tier = streak >= 10 ? 4 : streak >= 7 ? 3 : streak >= 4 ? 2 : 1
+  const ringCount = tier >= 4 ? 3 : tier
+  const baseColor = tier >= 3 ? '#ffd700' : '#00ff66'
+  const baseOpacity = 0.08 + tier * 0.04
+  const ringStart = size * 1.95 // just outside meteor ring at 1.80
+
+  useFrame((state, delta) => {
+    // Full aura (10+) slowly rotates and pulses
+    if (groupRef.current && tier >= 4) {
+      groupRef.current.rotation.y += delta * 0.3
+      groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.8) * 0.08
+    }
+    // Pulse the aura sphere opacity for 10+
+    if (auraRef.current && tier >= 4) {
+      const mat = auraRef.current.material as THREE.MeshBasicMaterial
+      mat.opacity = 0.06 + Math.sin(state.clock.elapsedTime * 1.5) * 0.04
+    }
+  })
+
+  return (
+    <group ref={groupRef}>
+      {/* Tiered rings */}
+      {Array.from({ length: ringCount }).map((_, i) => {
+        const r = ringStart + i * size * 0.15
+        const opacity = baseOpacity + i * 0.02
+        return (
+          <Ring
+            key={i}
+            args={[r, r + size * 0.03, 64]}
+            rotation={[-Math.PI / 2, 0, 0]}
+          >
+            <meshBasicMaterial
+              color={baseColor}
+              transparent
+              opacity={opacity}
+              side={THREE.DoubleSide}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+            />
+          </Ring>
+        )
+      })}
+
+      {/* Full golden aura sphere for 10+ streak */}
+      {tier >= 4 && (
+        <Sphere ref={auraRef} args={[ringStart + size * 0.5, 24, 24]}>
+          <meshBasicMaterial
+            color="#ffd700"
+            transparent
+            opacity={0.08}
+            side={THREE.BackSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </Sphere>
+      )}
+    </group>
+  )
+}
+
+// Shatter burst when streak is broken (latest run is failure)
+function StreakShatterBurst({ size }: { size: number }) {
+  const pointsRef = useRef<THREE.Points>(null)
+  const tRef = useRef(0)
+  const PARTICLE_COUNT = 24
+  const DURATION = 1.5 // seconds for the burst
+
+  // Random initial directions for each particle
+  const directions = useMemo(() => {
+    const dirs = []
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.random() * Math.PI
+      dirs.push(new THREE.Vector3(
+        Math.sin(phi) * Math.cos(theta),
+        Math.sin(phi) * Math.sin(theta) * 0.3,
+        Math.cos(phi)
+      ))
+    }
+    return dirs
+  }, [])
+
+  const positions = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), [])
+  const colors = useMemo(() => {
+    const c = new Float32Array(PARTICLE_COUNT * 3)
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      // Red-orange shatter particles
+      c[i * 3] = 1.0
+      c[i * 3 + 1] = 0.2 + Math.random() * 0.3
+      c[i * 3 + 2] = 0.05
+    }
+    return c
+  }, [])
+
+  useFrame((_, delta) => {
+    tRef.current += delta
+    if (tRef.current > DURATION || !pointsRef.current) return
+
+    const progress = tRef.current / DURATION
+    const speed = size * 4
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const d = directions[i]
+      positions[i * 3] = d.x * progress * speed
+      positions[i * 3 + 1] = d.y * progress * speed
+      positions[i * 3 + 2] = d.z * progress * speed
+    }
+
+    const geom = pointsRef.current.geometry
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geom.attributes.position.needsUpdate = true
+
+    // Fade out
+    const mat = pointsRef.current.material as THREE.PointsMaterial
+    mat.opacity = 0.8 * (1 - progress)
+  })
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+          count={PARTICLE_COUNT}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[colors, 3]}
+          count={PARTICLE_COUNT}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.06}
+        transparent
+        opacity={0.8}
+        vertexColors
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  )
+}
+
 // ── Main planet ───────────────────────────────────────────────────────────────
 interface RepoPlanetProps {
   repo: GitHubRepo
@@ -186,6 +573,7 @@ interface RepoPlanetProps {
   repoLanguages?: Record<string, number>
   commitMonths?: number[]          // 12-bucket activity (tier 1 only)
   openPRs?: PullRequest[]          // open PRs (tier 1 only)
+  actionRuns?: ActionRun[]         // GitHub Actions history
   isGraveyard?: boolean
   onSelect?: (repo: GitHubRepo | null) => void
   isSelected?: boolean
@@ -193,7 +581,7 @@ interface RepoPlanetProps {
 
 export function RepoPlanet({
   repo, tier, orbitRadius, offset, index,
-  repoLanguages, commitMonths, openPRs,
+  repoLanguages, commitMonths, openPRs, actionRuns,
   isGraveyard = false, onSelect, isSelected,
 }: RepoPlanetProps) {
   const groupRef  = useRef<THREE.Group>(null)
@@ -203,6 +591,42 @@ export function RepoPlanet({
 
   const baseColor  = getLanguageColor(repo.language ?? '')
   const daysSince  = getDaysSinceActivity(repo.pushed_at)
+
+  // Determine CI/CD surface state from the most recent action run
+  const latestCI = useMemo(() => {
+    if (!actionRuns || actionRuns.length === 0) return null
+    const latest = actionRuns[0]
+    if (latest.status === 'in_progress' || latest.status === 'queued') return 'in_progress'
+    if (latest.conclusion === 'success') return 'success'
+    if (latest.conclusion === 'failure') return 'failure'
+    return null
+  }, [actionRuns])
+
+  // Filter in-progress runs for live comets
+  const inProgressRuns = useMemo(() => {
+    if (!actionRuns) return []
+    return actionRuns.filter(r => r.status === 'in_progress' || r.status === 'queued')
+  }, [actionRuns])
+
+  // Count consecutive successful runs from most recent backward
+  const deployStreak = useMemo(() => {
+    if (!actionRuns || actionRuns.length === 0) return 0
+    let count = 0
+    for (const run of actionRuns) {
+      // Skip in-progress/queued — they haven't concluded yet
+      if (run.status === 'in_progress' || run.status === 'queued') continue
+      if (run.conclusion === 'success') count++
+      else break // first non-success stops the streak
+    }
+    return count
+  }, [actionRuns])
+
+  // Did the streak just break? (latest concluded run is a failure)
+  const streakBroken = useMemo(() => {
+    if (!actionRuns || actionRuns.length === 0) return false
+    const latestConcluded = actionRuns.find(r => r.status !== 'in_progress' && r.status !== 'queued')
+    return latestConcluded?.conclusion === 'failure'
+  }, [actionRuns])
 
   // Graveyard repos drift much slower than normal
   const orbitSpeed = isGraveyard
@@ -371,6 +795,17 @@ export function RepoPlanet({
           />
         </Sphere>
 
+        {/* CI/CD Surface Outcome Overlay */}
+        {!isGraveyard && latestCI === 'success' && (
+          <CISuccessOverlay size={size} />
+        )}
+        {!isGraveyard && latestCI === 'failure' && (
+          <CIFailureOverlay size={size} />
+        )}
+        {!isGraveyard && latestCI === 'in_progress' && (
+          <CIInProgressRing size={size} />
+        )}
+
         {/* Technical Wireframe Overlay — struggling/dormant tier 1 OR all graveyard */}
         {((health.tier !== 'thriving' && tier === 1) || isGraveyard) && (
           <TechnicalOverlay size={size} color={isGraveyard ? '#444455' : planetColor} />
@@ -442,6 +877,26 @@ export function RepoPlanet({
               />
             ))}
           </group>
+        )}
+
+        {/* Actions History Meteors — tier 1, 2, and 3 */}
+        {!isGraveyard && tier <= 3 && actionRuns && actionRuns.length > 0 && (
+          <BuildMeteors runs={actionRuns} orbitRadius={size * 1.80} />
+        )}
+
+        {/* Live Build Comets — one per in-progress run */}
+        {!isGraveyard && inProgressRuns.length > 0 && inProgressRuns.map((run, ci) => (
+          <LiveBuildComet key={run.id} size={size} index={ci} />
+        ))}
+
+        {/* Deploy Streak Aura — consecutive success rings */}
+        {!isGraveyard && deployStreak > 0 && (
+          <DeployStreakAura size={size} streak={deployStreak} />
+        )}
+
+        {/* Streak Shatter Burst — latest concluded run is a failure */}
+        {!isGraveyard && streakBroken && deployStreak === 0 && (
+          <StreakShatterBurst size={size} />
         )}
 
         {/* Graveyard hover tooltip — Minimal Archived Record */}

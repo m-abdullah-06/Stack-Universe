@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SolarSystemScene } from '@/components/solar-system/SolarSystemScene'
 import { EntryCinematic } from '@/components/cinematic/EntryCinematic'
 import { HUD } from '@/components/ui/HUD'
+import { SpaceWeather } from '@/components/ui/SpaceWeather'
 import { HallOfGiants } from '@/components/ui/HallOfGiants'
 import { ShareCard } from '@/components/ui/ShareCard'
 import { useUniverseStore } from '@/store'
@@ -146,6 +147,7 @@ export default function UniverseClient() {
         >
           <SolarSystemScene data={data} />
           <HUD data={data} />
+          <SpaceWeather data={data} />
           <HallOfGiants />
           <ShareCard data={data} />
         </motion.div>

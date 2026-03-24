@@ -89,6 +89,15 @@ export interface PullRequest {
   draft: boolean
 }
 
+export interface ActionRun {
+  id: number
+  name: string
+  status: string
+  conclusion: string | null
+  created_at: string
+  html_url: string
+}
+
 export interface UniverseData {
   username: string
   user: GitHubUser
@@ -107,6 +116,7 @@ export interface UniverseData {
   commitActivity:     Record<string, number[]>
   // open PRs per top-5 repo
   openPRs:            Record<string, PullRequest[]>
+  repoActions:        Record<string, ActionRun[]>
   metrics_status:     'success' | 'failed'
 }
 

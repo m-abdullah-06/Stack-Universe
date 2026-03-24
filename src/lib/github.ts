@@ -5,6 +5,7 @@ import type {
   CommitData,
   LanguageData,
   UniverseData,
+  ActionRun,
 } from '@/types'
 import { getLanguageColor } from './language-colors'
 import {
@@ -191,6 +192,22 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     ),
   ])
 
+  // --- Fetch GitHub Actions for top 30 repos (tier 1 + 2 + 3) ---
+  const top30 = [...repos]
+    .filter(r => !r.fork)
+    .sort((a, b) => b.stargazers_count - a.stargazers_count)
+    .slice(0, 30)
+
+  const actionsResults = await Promise.allSettled(
+    top30.map(r =>
+      fetchGitHub<{ workflow_runs: Array<{
+        id: number; name: string; status: string
+        conclusion: string | null; created_at: string
+        html_url: string
+      }> }>(`/repos/${username}/${r.name}/actions/runs?per_page=10`)
+    )
+  )
+
   const repoLanguages: Record<string, Record<string, number>> = {}
   top5.forEach((r, i) => {
     const res = langResults[i]
@@ -221,6 +238,24 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     const res = prResults[i]
     if (res.status === 'fulfilled' && Array.isArray(res.value)) {
       openPRs[r.name] = res.value
+    }
+  })
+
+  // Map actions/runs results → ActionRun[]
+  const repoActions: Record<string, ActionRun[]> = {}
+  top30.forEach((r, i) => {
+    const res = actionsResults[i]
+    if (res.status === 'fulfilled' && res.value?.workflow_runs) {
+      repoActions[r.name] = res.value.workflow_runs.map(run => ({
+        id: run.id,
+        name: run.name,
+        status: run.status,
+        conclusion: run.conclusion,
+        created_at: run.created_at,
+        html_url: run.html_url,
+      }))
+    } else {
+      repoActions[r.name] = []
     }
   })
 
@@ -297,6 +332,7 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     repoLanguages,
     commitActivity,
     openPRs,
+    repoActions,
     metrics_status: Object.keys(healthMetrics).length > 0 ? 'success' : 'failed',
   }
 }
