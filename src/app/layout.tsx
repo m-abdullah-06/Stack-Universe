@@ -1,27 +1,28 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Stack Universe | Every Developer Has a Universe',
+  title: "Stack Universe | Every Developer Has a Universe",
   description:
-    'Transform any GitHub profile into a living 3D solar system. Explore the multiverse of developers.',
+    "Transform any GitHub profile into a living 3D solar system. Explore the multiverse of developers.",
   icons: {
-    icon: '/icon.png',
+    icon: "/icon.png",
   },
   openGraph: {
-    title: 'Stack Universe',
-    description: 'Your GitHub profile as a solar system',
-    type: 'website',
+    title: "Stack Universe",
+    description: "Your GitHub profile as a solar system",
+    type: "website",
   },
   verification: {
-    google: 'J0HjDfdCbV9fjHZCfziwLaLasyWpiz548jBxFKn9lw8',
+    google: "J0HjDfdCbV9fjHZCfziwLaLasyWpiz548jBxFKn9lw8",
   },
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -29,5 +30,5 @@ export default function RootLayout({
         {children}
       </body>
     </html>
-  )
+  );
 }
