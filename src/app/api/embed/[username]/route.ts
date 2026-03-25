@@ -23,11 +23,11 @@ export async function GET(
     const starColor = claim?.star_color || '#00e5ff'
     const bio = claim?.bio || ''
     
-    // Width and Center Logic
-    const width = 480
-    const height = 180
-    const centerX = 160
-    const centerY = 90
+    // Premium Dimensions
+    const width = 540
+    const height = 200
+    const centerX = 150
+    const centerY = 100
 
     let pinnedRepos = []
     if (claim?.pinned_repos?.length > 0) {
@@ -46,22 +46,19 @@ export async function GET(
     }
 
     const orbits = pinnedRepos.map((repo: any, i: number) => {
-      const rx = 45 + i * 18
+      const rx = 52 + i * 22
       const ry = rx * 0.5
-      const duration = 10 + i * 5
+      const duration = 12 + i * 6
       const pathId = `orbit-${i}`
-      
-      // Ellipse path starting from the right side
       const pathD = `M ${centerX + rx} ${centerY} a ${rx} ${ry} 0 1 1 0 -0.0001`
 
       return `
-        <path id="${pathId}" d="${pathD}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
-        <circle r="4" fill="${repo.color}">
+        <path id="${pathId}" d="${pathD}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
+        <circle r="4.5" fill="${repo.color}" filter="url(#planetGlow)">
           <animateMotion dur="${duration}s" repeatCount="indefinite">
             <mpath href="#${pathId}" />
           </animateMotion>
-          <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
-          <animate attributeName="r" values="3.5;4.5;3.5" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
         </circle>
       `
     }).join('')
@@ -71,60 +68,73 @@ export async function GET(
   <style>
     .star { animation: pulse 4s ease-in-out infinite; transform-origin: ${centerX}px ${centerY}px; }
     @keyframes pulse {
-      0%, 100% { r: 14; opacity: 0.8; }
-      50% { r: 17; opacity: 1; }
+      0%, 100% { r: 15; opacity: 0.8; }
+      50% { r: 19; opacity: 1; }
     }
-    .text-main { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 800; fill: white; }
-    .text-mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 9px; fill: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.15em; }
-    .bio-text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 8px; fill: rgba(255,255,255,0.3); font-style: italic; }
+    .text-main { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 900; fill: white; }
+    .text-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; fill: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.2em; }
+    .bio-text { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 9px; fill: rgba(255,255,255,0.35); font-style: italic; }
   </style>
   
-  <rect width="${width}" height="${height}" rx="12" fill="#000008" stroke="rgba(0,229,255,0.1)" stroke-width="1" />
+  <rect width="${width}" height="${height}" rx="16" fill="#000008" stroke="rgba(0,229,255,0.15)" stroke-width="1.5" />
   
   <defs>
-    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(0,229,255,0.03)" stroke-width="0.5"/>
-    </pattern>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="4" result="blur" />
+    <radialGradient id="starGrad" cx="${centerX}" cy="${centerY}" r="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="${starColor}" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="${starColor}" stop-opacity="0" />
+    </radialGradient>
+    <filter id="starGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
+    <filter id="planetGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(0,229,255,0.04)" stroke-width="0.5"/>
+    </pattern>
   </defs>
-  <rect width="${width}" height="${height}" fill="url(#grid)" rx="12" />
+  
+  <rect width="${width}" height="${height}" fill="url(#grid)" rx="16" />
+  <circle cx="${centerX}" cy="${centerY}" r="50" fill="url(#starGrad)" />
   
   <!-- Central Star -->
-  <circle cx="${centerX}" cy="${centerY}" r="16" fill="${starColor}" class="star" filter="url(#glow)" />
-  <ellipse cx="${centerX}" cy="${centerY}" rx="30" ry="15" fill="none" stroke="${starColor}" stroke-width="0.5" stroke-dasharray="2 6" opacity="0.2" />
+  <circle cx="${centerX}" cy="${centerY}" r="17" fill="${starColor}" class="star" filter="url(#starGlow)" />
+  <ellipse cx="${centerX}" cy="${centerY}" rx="35" ry="17.5" fill="none" stroke="${starColor}" stroke-width="0.5" stroke-dasharray="3 8" opacity="0.25" />
   
   <!-- Orbits & Planets -->
   ${orbits}
   
   <!-- Info Panel -->
-  <g transform="translate(310, 40)">
+  <g transform="translate(300, 45)">
     <text class="text-mono" y="0">Universe of</text>
-    <text class="text-main" y="24" font-size="18">@${data.username.toUpperCase()}</text>
-    ${bio ? `<text class="bio-text" y="38" font-size="8">"${bio.length > 30 ? bio.slice(0, 27) + '...' : bio}"</text>` : ''}
+    <text class="text-main" y="28" font-size="24" letter-spacing="-0.02em">@${data.username.toUpperCase()}</text>
+    ${bio ? `<text class="bio-text" y="46">"${bio.length > 35 ? bio.slice(0, 32) + '...' : bio}"</text>` : ''}
     
-    <g transform="translate(0, 58)">
-      <text class="text-mono" y="0">Score</text>
-      <text class="text-main" y="20" font-size="16" fill="#00e5ff">${data.universeScore.toLocaleString()}</text>
-      
-      <text class="text-mono" x="90" y="0">Repos</text>
-      <text class="text-main" x="90" y="20" font-size="16">${data.repos.length}</text>
+    <g transform="translate(0, 68)">
+      <g>
+        <text class="text-mono" y="0">Universe Score</text>
+        <text class="text-main" y="24" font-size="20" fill="#00e5ff">${data.universeScore.toLocaleString()}</text>
+      </g>
+      <g transform="translate(130, 0)">
+        <text class="text-mono" y="0">Repositories</text>
+        <text class="text-main" y="24" font-size="20">${data.repos.length}</text>
+      </g>
     </g>
     
-    <g transform="translate(0, 105)">
-      <rect width="170" height="22" rx="4" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" />
-      <text class="text-mono" x="8" y="14" font-size="8" fill="rgba(0,229,255,0.6)">Distance: ${data.distanceLabel}</text>
+    <g transform="translate(0, 115)">
+      <rect width="210" height="24" rx="6" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" />
+      <text class="text-mono" x="10" y="15" font-size="9" fill="rgba(0,229,255,0.7)">Distance: ${data.distanceLabel}</text>
     </g>
   </g>
   
-  <!-- Accents -->
-  <g stroke="rgba(0,229,255,0.2)" stroke-width="1.5">
-    <path d="M 12 12 L 24 12 M 12 12 L 12 24" />
-    <path d="M ${width-12} 12 L ${width-24} 12 M ${width-12} 12 L ${width-12} 24" />
-    <path d="M 12 ${height-12} L 24 ${height-12} M 12 ${height-12} L 12 ${height-24}" />
-    <path d="M ${width-12} ${height-12} L ${width-24} ${height-12} M ${width-12} ${height-12} L ${width-12} ${height-24}" />
+  <!-- Corner Accents -->
+  <g stroke="rgba(0,229,255,0.25)" stroke-width="2">
+    <path d="M 16 16 L 32 16 M 16 16 L 16 32" />
+    <path d="M ${width-16} 16 L ${width-32} 16 M ${width-16} 16 L ${width-16} 32" />
+    <path d="M 16 ${height-16} L 32 ${height-16} M 16 ${height-16} L 16 ${height-32}" />
+    <path d="M ${width-16} ${height-16} L ${width-32} ${height-16} M ${width-16} ${height-16} L ${width-16} ${height-32}" />
   </g>
 </svg>
     `
