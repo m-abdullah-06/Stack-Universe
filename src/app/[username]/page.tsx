@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SolarSystemScene } from '@/components/solar-system/SolarSystemScene'
 import { EntryCinematic } from '@/components/cinematic/EntryCinematic'
 import { HUD } from '@/components/ui/HUD'
+import { CustomisePanel } from '@/components/ui/CustomisePanel'
 import { HallOfGiants } from '@/components/ui/HallOfGiants'
 import { ShareCard } from '@/components/ui/ShareCard'
 import { useUniverseStore } from '@/store'
@@ -17,9 +18,9 @@ export default function UniversePage() {
   const params = useParams()
   const router = useRouter()
   const rawUsername = params?.username as string
-  const username = rawUsername?.replace(/^@/, '')
+  const username = rawUsername?.replace(/^@/, '')?.toLowerCase()
 
-  const { setCurrentUniverse } = useUniverseStore()
+  const { setCurrentUniverse, setClaimData, claimData } = useUniverseStore()
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
@@ -28,18 +29,35 @@ export default function UniversePage() {
   useEffect(() => {
     if (!username) return
 
+    // Immediately clear previous user's claim data from global store
+    setClaimData(null)
+
     const fetchData = async () => {
       try {
-        const res = await fetch(`/api/github/${username}`)
+        const [res, claimRes] = await Promise.all([
+          fetch(`/api/github/${username}`),
+          fetch(`/api/claim/${username}`, { cache: 'no-store' })
+        ])
+
         if (!res.ok) {
           const json = await res.json().catch(() => ({}))
           throw new Error(json.error || 'Failed to fetch')
         }
-        const json: UniverseData = await res.json()
-        setData(json)
-        setCurrentUniverse(json)
 
-        // Store in Supabase (background, don't await)
+        const json: UniverseData = await res.json()
+        console.log('Fetching claim for:', username)
+        const claimJson = await claimRes.json()
+        console.log('Claim data received:', claimJson)
+        
+        const finalData = { ...json, claim: claimJson.claim }
+        console.log('Final data with claim:', !!finalData.claim)
+        
+        setData(finalData)
+        setCurrentUniverse(finalData)
+        setClaimData(claimJson.claim || null)
+        console.log('Claim data set:', claimJson.claim)
+
+        // Store in Supabase (background)
         fetch('/api/universes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -95,6 +113,7 @@ export default function UniversePage() {
             username={username}
             lightYears={data?.lightYears ?? 25_000_000_000}
             distanceLabel={data?.distanceLabel ?? 'Deep space'}
+            claimData={claimData}
             onComplete={handleCinematicComplete}
           />
         )}
@@ -146,6 +165,7 @@ export default function UniversePage() {
         >
           <SolarSystemScene data={data} />
           <HUD data={data} />
+          <CustomisePanel data={data} />
           <HallOfGiants />
           <ShareCard data={data} />
         </motion.div>

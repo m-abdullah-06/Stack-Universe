@@ -3,6 +3,7 @@
 import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sphere, Ring, MeshDistortMaterial, Html } from '@react-three/drei'
+import { useUniverseStore } from '@/store'
 import * as THREE from 'three'
 import type { GitHubRepo, RepoTier, PullRequest, ActionRun } from '@/types'
 import { getLanguageColor } from '@/lib/language-colors'
@@ -132,6 +133,29 @@ function SimpleVelocityRing({ size, color }: { size: number; color: string }) {
         opacity={0.15}
         side={THREE.DoubleSide}
         depthWrite={false}
+      />
+    </Ring>
+  )
+}
+
+function PinnedRepoRing({ size }: { size: number }) {
+  const ref = useRef<THREE.Mesh>(null)
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.rotation.z = state.clock.getElapsedTime() * 0.5
+      const s = 1 + Math.sin(state.clock.getElapsedTime() * 2) * 0.05
+      ref.current.scale.setScalar(s)
+    }
+  })
+  return (
+    <Ring ref={ref} args={[size * 1.5, size * 1.55, 64]} rotation={[Math.PI / 2.5, 0, 0]}>
+      <meshBasicMaterial
+        color="#ffd700"
+        transparent
+        opacity={0.3}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
       />
     </Ring>
   )
@@ -589,6 +613,9 @@ export function RepoPlanet({
   const [hovered, setHovered] = useState(false)
   const angleRef  = useRef(offset)
 
+  const { claimData } = useUniverseStore()
+  const isPinned = claimData?.pinned_repos?.includes(repo.name)
+
   const baseColor  = getLanguageColor(repo.language ?? '')
   const daysSince  = getDaysSinceActivity(repo.pushed_at)
 
@@ -765,6 +792,7 @@ export function RepoPlanet({
         )}
 
         {/* Planet body — Optimized Technical Glow */}
+        {isPinned && <PinnedRepoRing size={size} />}
         <Sphere
           ref={planetRef}
           args={[size, 

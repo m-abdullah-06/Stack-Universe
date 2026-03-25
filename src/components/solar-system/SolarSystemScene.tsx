@@ -2,7 +2,7 @@
 
 import { useRef, useState, Suspense, useMemo, useEffect, useCallback } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stars, AdaptiveDpr, Line } from '@react-three/drei'
+import { OrbitControls, Stars, AdaptiveDpr, Line, Html } from '@react-three/drei'
 import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -78,6 +78,27 @@ function fmtDays(dateStr: string) {
   if (d < 30)  return `${Math.floor(d / 7)}w ago`
   if (d < 365) return `${Math.floor(d / 30)}mo ago`
   return `${Math.floor(d / 365)}yr ago`
+}
+
+function CentralBio({ data }: { data: UniverseData }) {
+  const { claimData } = useUniverseStore()
+  const bio = claimData?.bio || data.claim?.bio
+  if (!bio) return null
+
+  return (
+    <Html position={[0, 15, 0]} center distanceFactor={20}>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center pointer-events-none select-none max-w-[320px]"
+      >
+        <p className="font-mono text-xs text-space-cyan/60 tracking-[0.4em] uppercase mb-2">UNIVERSE DOMAIN</p>
+        <p className="font-mono text-base text-white/90 leading-relaxed italic shadow-black drop-shadow-lg">
+          "{bio}"
+        </p>
+      </motion.div>
+    </Html>
+  )
 }
 
 function ConstellationLines({ 
@@ -811,6 +832,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
               setSelectedRepo(null)
             }}
           />
+          <CentralBio data={data} />
 
           {/* REPOS MODE — full system */}
           {viewMode === 'repos' && !isEmpty && (

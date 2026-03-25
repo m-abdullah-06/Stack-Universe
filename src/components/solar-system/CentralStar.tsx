@@ -3,8 +3,38 @@
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sphere, MeshDistortMaterial } from '@react-three/drei'
+import { useUniverseStore } from '@/store'
 import * as THREE from 'three'
 import type { StarType } from '@/types'
+
+function ClaimPulse({ active }: { active: boolean }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  
+  useFrame((state) => {
+    if (!meshRef.current || !active) return
+    const t = state.clock.getElapsedTime() * 2
+    const scale = 1 + (t % 1) * 30
+    const opacity = 1 - (t % 1)
+    meshRef.current.scale.setScalar(scale)
+    if (meshRef.current.material instanceof THREE.MeshBasicMaterial) {
+      meshRef.current.material.opacity = Math.max(0, opacity * 0.4)
+    }
+  })
+
+  if (!active) return null
+
+  return (
+    <Sphere ref={meshRef} args={[1, 32, 32]}>
+      <meshBasicMaterial 
+        color="#ffd700" 
+        transparent 
+        opacity={0.4} 
+        side={THREE.DoubleSide}
+        blending={THREE.AdditiveBlending}
+      />
+    </Sphere>
+  )
+}
 
 interface CentralStarProps {
   score: number
@@ -65,8 +95,23 @@ export function CentralStar({ score, totalRepos, totalStars, onClick }: CentralS
   const ringRef1  = useRef<THREE.Mesh>(null)
   const ringRef2  = useRef<THREE.Mesh>(null)
 
+  const { showClaimPulse, claimData } = useUniverseStore()
+
   const starType = getStarType(totalRepos)
-  const cfg      = STAR_CONFIG[starType]
+  const baseCfg  = STAR_CONFIG[starType]
+  
+  // Apply claim customization
+  const cfg = useMemo(() => {
+    if (claimData?.star_color) {
+      return { 
+        ...baseCfg, 
+        color: claimData.star_color,
+        coronaColor: claimData.star_color // Simpler for now
+      }
+    }
+    return baseCfg
+  }, [baseCfg, claimData?.star_color])
+
   const isHyper  = starType === 'hypergiant'
 
   const starSize = useMemo(() => {
@@ -149,6 +194,8 @@ export function CentralStar({ score, totalRepos, totalStars, onClick }: CentralS
           roughness={0.1}
         />
       </Sphere>
+
+      <ClaimPulse active={showClaimPulse} />
 
       <pointLight color={cfg.color} intensity={score > 10000 ? 3.5 : 2.5} distance={220} decay={1} />
       <pointLight color={cfg.coronaColor} intensity={0.6} distance={350} decay={0.5} />

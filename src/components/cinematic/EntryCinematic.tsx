@@ -8,6 +8,7 @@ interface EntryCinematicProps {
   username: string
   lightYears: number
   distanceLabel: string
+  claimData?: any | null
   onComplete: () => void
 }
 
@@ -25,6 +26,7 @@ export function EntryCinematic({
   username,
   lightYears,
   distanceLabel,
+  claimData,
   onComplete,
 }: EntryCinematicProps) {
   const [phase, setPhase] = useState<
@@ -235,6 +237,18 @@ export function EntryCinematic({
               >
                 @{username}
               </p>
+              
+              {claimData?.entry_msg && (
+                <motion.p
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="font-mono text-sm text-white/60 mt-4 italic max-w-lg mx-auto"
+                >
+                  "{claimData.entry_msg}"
+                </motion.p>
+              )}
+
               <motion.div
                 className="flex items-center justify-center gap-2 mt-4"
                 animate={{ opacity: [1, 0.3, 1] }}

@@ -75,7 +75,7 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
   
   try {
     const gqlData = await fetchGraphQL<any>(`
-      query($username: String!, $since: DateTime!) {
+      query($username: String!, $since: GitTimestamp!) {
         user(login: $username) {
           repositories(first: 100, ownerAffiliations: OWNER, orderBy: {field: PUSHED_AT, direction: DESC}) {
             nodes {

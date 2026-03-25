@@ -9,6 +9,7 @@ import { HUD } from '@/components/ui/HUD'
 import { SpaceWeather } from '@/components/ui/SpaceWeather'
 import { HallOfGiants } from '@/components/ui/HallOfGiants'
 import { ShareCard } from '@/components/ui/ShareCard'
+import { CustomisePanel } from '@/components/ui/CustomisePanel'
 import { useUniverseStore } from '@/store'
 import type { UniverseData } from '@/types'
 
@@ -20,7 +21,7 @@ export default function UniverseClient() {
   const rawUsername = params?.username as string
   const username = rawUsername?.replace(/^@/, '')
 
-  const { setCurrentUniverse } = useUniverseStore()
+  const { setCurrentUniverse, setClaimData, claimData } = useUniverseStore()
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
@@ -29,16 +30,29 @@ export default function UniverseClient() {
   useEffect(() => {
     if (!username) return
 
+    // Immediately clear previous user's claim data from global store
+    setClaimData(null)
+
     const fetchData = async () => {
       try {
-        const res = await fetch(`/api/github/${username}`)
+        const [res, claimRes] = await Promise.all([
+          fetch(`/api/github/${username}`),
+          fetch(`/api/claim/${username}`, { cache: 'no-store' })
+        ])
+        
         if (!res.ok) {
           const json = await res.json().catch(() => ({}))
           throw new Error(json.error || 'Failed to fetch')
         }
+        
         const json: UniverseData = await res.json()
-        setData(json)
-        setCurrentUniverse(json)
+        const claimJson = await claimRes.json()
+        
+        const finalData = { ...json, claim: claimJson.claim }
+        
+        setData(finalData)
+        setCurrentUniverse(finalData)
+        setClaimData(claimJson.claim || null)
 
         // Store in Supabase (background, don't await)
         fetch('/api/universes', {
@@ -96,6 +110,7 @@ export default function UniverseClient() {
             username={username}
             lightYears={data?.lightYears ?? 25_000_000_000}
             distanceLabel={data?.distanceLabel ?? 'Deep space'}
+            claimData={claimData}
             onComplete={handleCinematicComplete}
           />
         )}
@@ -147,6 +162,7 @@ export default function UniverseClient() {
         >
           <SolarSystemScene data={data} />
           <HUD data={data} />
+          <CustomisePanel data={data} />
           <SpaceWeather data={data} />
           <HallOfGiants />
           <ShareCard data={data} />

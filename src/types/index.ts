@@ -98,6 +98,18 @@ export interface ActionRun {
   html_url: string
 }
 
+export interface ClaimData {
+  id: number
+  username: string
+  github_id: string
+  star_color: string
+  entry_msg: string
+  bio: string
+  pinned_repos: string[]
+  created_at: string
+  updated_at: string
+}
+
 export interface UniverseData {
   username: string
   user: GitHubUser
@@ -118,6 +130,7 @@ export interface UniverseData {
   openPRs:            Record<string, PullRequest[]>
   repoActions:        Record<string, ActionRun[]>
   metrics_status:     'success' | 'failed'
+  claim?:             ClaimData | null
 }
 
 export interface StoredUniverse {

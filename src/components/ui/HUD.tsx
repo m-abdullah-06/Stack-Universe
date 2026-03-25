@@ -2,8 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import type { UniverseData } from '@/types'
 import { useUniverseStore } from '@/store'
+import { LoginButton } from './LoginButton'
 import { AmbientAudio } from './AmbientAudio'
 
 interface HUDProps {
@@ -12,7 +14,49 @@ interface HUDProps {
 
 export function HUD({ data }: HUDProps) {
   const router = useRouter()
-  const { toggleHallOfGiants, setShowShareCard, viewMode, setViewMode } = useUniverseStore()
+  const { data: session } = useSession()
+  const { 
+    toggleHallOfGiants, 
+    setShowShareCard, 
+    viewMode, 
+    setViewMode, 
+    claimData, 
+    setClaimData,
+    setShowClaimPulse 
+  } = useUniverseStore()
+
+  const isOwner = session?.user && (session.user as any).login === data.username
+  const isClaimed = !!claimData || !!data.claim
+
+  // Auto-sync if prop has it but store doesn't
+  if (data.claim && !claimData) {
+    setClaimData(data.claim)
+  }
+
+  const handleClaim = async () => {
+    try {
+      const res = await fetch(`/api/claim/${data.username}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ github_id: data.user.login })
+      })
+      if (!res.ok) {
+        const errJson = await res.json()
+        if (errJson.error === 'ALREADY_CLAIMED') {
+          alert('This universe has already been claimed!')
+          window.location.reload() // Force sync
+          return
+        }
+        throw new Error('Claim failed')
+      }
+      const json = await res.json()
+      setClaimData(json.claim)
+      setShowClaimPulse(true)
+      setTimeout(() => setShowClaimPulse(false), 3000)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   return (
     <>
@@ -54,6 +98,16 @@ export function HUD({ data }: HUDProps) {
               </button>
             </div>
           </div>
+
+          {/* Universe Bio (Mobile) */}
+          {(claimData?.bio || data.claim?.bio) && (
+            <div className="border border-white/5 border-l-[3px] border-l-space-gold/50 bg-white/[0.02] rounded-r-lg rounded-l-[3px] py-2 px-3 mx-2 mb-2 mt-0.5">
+              <p className="font-mono text-[9px] text-gray-400 italic leading-tight break-words">
+                "{(claimData?.bio || data.claim?.bio)}"
+              </p>
+            </div>
+          )}
+
           {/* Row 2: Stats + Toggle */}
           <div className="flex items-center justify-between px-3 pb-2.5 gap-2">
             <div className="flex items-center gap-3">
@@ -75,46 +129,74 @@ export function HUD({ data }: HUDProps) {
         </div>
 
         {/* ── DESKTOP LAYOUT (md+) ── */}
-        <div className="hidden md:block p-5 space-y-4">
+        <div className="hidden md:block p-4 space-y-3">
           {/* Identity */}
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0">
               {data.user.avatar_url && (
                 <img src={data.user.avatar_url} alt={data.username}
-                  className="w-12 h-12 rounded-full border-2 border-space-cyan/30 shadow-[0_0_15px_rgba(0,229,255,0.2)]" />
+                  className="w-10 h-10 rounded-full border-2 border-space-cyan/30 shadow-[0_0_15px_rgba(0,229,255,0.2)]" />
               )}
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-space-cyan border-2 border-black flex items-center justify-center text-[7px] text-black font-bold">✓</div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-space-cyan border-2 border-black flex items-center justify-center text-[6px] text-black font-bold">✓</div>
             </div>
             <div>
-              <p className="font-orbitron text-[9px] text-space-cyan/40 tracking-[0.2em] mb-0.5">UNIVERSE OF</p>
-              <p className="font-orbitron font-bold text-white text-base leading-tight">@{data.username}</p>
+              <p className="font-orbitron text-[8px] text-space-cyan/40 tracking-[0.2em] mb-0.5">UNIVERSE OF</p>
+              <div className="flex items-center gap-2">
+                <p className="font-orbitron font-bold text-white text-sm leading-tight">@{data.username}</p>
+                {isClaimed && (
+                  <span className="bg-space-gold/20 text-space-gold text-[7px] font-bold px-1.5 py-0.5 rounded border border-space-gold/30 tracking-tighter shadow-[0_0_10px_rgba(255,215,0,0.2)]">
+                    ✓ CLAIMED
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Score */}
-          <div className="border-t border-white/5 pt-3">
+          {/* Universe Bio (Desktop) */}
+          {(claimData?.bio || data.claim?.bio) && (
+            <div className="border border-white/5 border-l-[3px] border-l-space-gold/50 hover:border-l-space-gold transition-colors bg-white/[0.02] rounded-r-lg rounded-l-[3px] py-3 px-3 mx-0.5 mt-1">
+              <p className="font-mono text-[10px] text-gray-400 italic leading-relaxed break-words">
+                "{(claimData?.bio || data.claim?.bio)}"
+              </p>
+            </div>
+          )}
+
+          {/* Claim CTA for owners */}
+          {isOwner && !isClaimed && (
+            <motion.button
+              onClick={handleClaim}
+              className="w-full bg-space-gold text-black font-orbitron font-black text-[10px] py-2.5 rounded-lg tracking-[0.2em] shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:shadow-[0_0_30px_rgba(255,215,0,0.5)] transition-all uppercase"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              CLAIM YOUR UNIVERSE
+            </motion.button>
+          )}
+
+          {/* Score & Status */}
+          <div className="border-t border-white/5 pt-3 space-y-2">
             <div className="flex justify-between items-baseline">
               <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">Universe Score</span>
               <span className="text-sm font-orbitron font-bold text-space-cyan">{data.universeScore.toLocaleString()}</span>
             </div>
+            <div className="flex items-center gap-2 bg-space-cyan/5 border border-space-cyan/15 rounded-lg px-2.5 py-1.5">
+              <div className="w-1 h-1 rounded-full bg-space-cyan animate-pulse" />
+              <span className="text-[9px] font-mono text-space-cyan tracking-wider">{data.distanceLabel}</span>
+            </div>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/[0.03] rounded-lg p-3 text-center">
-              <p className="text-[8px] font-mono text-gray-600 uppercase tracking-widest mb-1">Stars</p>
-              <p className="font-orbitron text-sm text-space-gold font-bold">★{data.totalStars.toLocaleString()}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+              <p className="text-[8px] font-mono text-gray-600 uppercase tracking-widest mb-0.5">Stars</p>
+              <p className="font-orbitron text-xs text-space-gold font-bold">★{data.totalStars.toLocaleString()}</p>
             </div>
-            <div className="bg-white/[0.03] rounded-lg p-3 text-center">
-              <p className="text-[8px] font-mono text-gray-600 uppercase tracking-widest mb-1">Repos</p>
-              <p className="font-orbitron text-sm text-white font-bold">{data.repos.length}</p>
+            <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+              <p className="text-[8px] font-mono text-gray-600 uppercase tracking-widest mb-0.5">Repos</p>
+              <p className="font-orbitron text-xs text-white font-bold">{data.repos.length}</p>
             </div>
-          </div>
-
-          {/* Status badge */}
-          <div className="flex items-center gap-2 bg-space-cyan/5 border border-space-cyan/15 rounded-lg px-3 py-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-space-cyan animate-pulse" />
-            <span className="text-[10px] font-mono text-space-cyan tracking-wider">{data.distanceLabel}</span>
           </div>
 
           {/* View Toggle */}
@@ -131,27 +213,30 @@ export function HUD({ data }: HUDProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="grid grid-cols-3 gap-2">
             <button onClick={() => router.push('/')}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all font-mono text-[9px] text-gray-400 hover:text-white uppercase tracking-wider">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all font-mono text-[8px] text-gray-400 hover:text-white uppercase tracking-wider">
+              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               Exit
             </button>
             <button onClick={() => setShowShareCard(true)}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.03] border border-space-magenta/20 hover:bg-space-magenta/10 transition-all font-mono text-[9px] text-space-magenta/70 hover:text-space-magenta uppercase tracking-wider">
+              className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/[0.03] border border-space-magenta/20 hover:bg-space-magenta/10 transition-all font-mono text-[8px] text-space-magenta/70 hover:text-space-magenta uppercase tracking-wider">
               Share
             </button>
             <button onClick={toggleHallOfGiants}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.03] border border-space-gold/20 hover:bg-space-gold/10 transition-all font-mono text-[9px] text-space-gold/70 hover:text-space-gold uppercase tracking-wider">
+              className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/[0.03] border border-space-gold/20 hover:bg-space-gold/10 transition-all font-mono text-[8px] text-space-gold/70 hover:text-space-gold uppercase tracking-wider">
               ★ Top
             </button>
           </div>
 
-          <div className="flex items-center gap-3 pt-1">
-            <AmbientAudio />
-          </div>
         </div>
       </motion.div>
+
+      {/* ─── Global Floating Controls ─────────── */}
+      <div className="fixed top-36 md:top-6 right-3 md:right-6 z-[90] flex flex-col md:flex-row items-end md:items-center gap-2 md:gap-3">
+        <AmbientAudio />
+        <LoginButton className="!px-4 !py-2 !text-[9px]" />
+      </div>
 
       {/* ─── Bottom: Language Legend ─────────────────────────── */}
       <motion.div

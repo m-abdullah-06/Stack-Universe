@@ -26,6 +26,12 @@ interface UniverseStore {
   toggleHallOfGiants: () => void
   showShareCard: boolean
   setShowShareCard: (v: boolean) => void
+
+  claimData: any | null
+  setClaimData: (data: any | null) => void
+
+  showClaimPulse: boolean
+  setShowClaimPulse: (v: boolean) => void
 }
 
 export const useUniverseStore = create<UniverseStore>((set) => ({
@@ -53,4 +59,10 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   toggleHallOfGiants: () => set((s) => ({ showHallOfGiants: !s.showHallOfGiants })),
   showShareCard: false,
   setShowShareCard: (v) => set({ showShareCard: v }),
+
+  claimData: null,
+  setClaimData: (data) => set({ claimData: data }),
+
+  showClaimPulse: false,
+  setShowClaimPulse: (v) => set({ showClaimPulse: v }),
 }))

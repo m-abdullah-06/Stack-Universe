@@ -111,9 +111,9 @@ export function AmbientAudio() {
   return (
     <motion.button
       onClick={toggle}
-      className="hud-panel rounded px-3 py-2 font-mono text-xs transition-all flex items-center gap-2"
-      style={{ color: enabled ? '#00e5ff' : '#2a4a5a' }}
-      whileHover={{ scale: 1.03 }}
+      className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-full px-4 py-2 font-mono text-[9px] tracking-widest transition-all flex items-center gap-2"
+      style={{ color: enabled ? '#00e5ff' : '#888' }}
+      whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.05)' }}
       whileTap={{ scale: 0.97 }}
       title={enabled ? 'Mute ambient sound' : 'Enable ambient sound'}
     >

@@ -10,8 +10,11 @@ import {
 import { MultiverseScene } from "@/components/multiverse/MultiverseScene";
 import { SearchBar } from "@/components/multiverse/SearchBar";
 import { RandomUniverseButton } from "@/components/ui/RandomUniverseButton";
+import { LoginButton } from "@/components/ui/LoginButton";
 import { AmbientAudio } from "@/components/ui/AmbientAudio";
 import type { StoredUniverse, LeaderboardEntry } from "@/types";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const FACTS = [
   {
@@ -118,6 +121,12 @@ export default function Home() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [isWarping, setIsWarping] = useState(false);
 
+  const { data: session } = useSession();
+  const router = useRouter();
+  const loggedInUser = session?.user
+    ? (session.user as any).login || session.user.name
+    : null;
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -162,7 +171,7 @@ export default function Home() {
               STACK<span className="text-space-cyan">UNIVERSE</span>
             </h1>
             <span className="font-mono text-[7px] md:text-[8px] text-gray-600 tracking-[0.2em] uppercase hidden sm:inline">
-              v1.0.2
+              v1.0.4
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -215,16 +224,24 @@ export default function Home() {
               </motion.div>
             )}
 
-            {/* Random Button */}
+            {/* Action Buttons */}
             <motion.div
-              className="flex justify-center"
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
             >
+              {loggedInUser && (
+                <button
+                  onClick={() => router.push(`/universe/${loggedInUser}`)}
+                  className="px-6 py-3 font-mono text-[10px] sm:text-xs tracking-[0.2em] bg-space-gold/10 text-space-gold border border-space-gold/30 rounded-lg shadow-[0_0_15px_rgba(255,215,0,0.1)] hover:shadow-[0_0_25px_rgba(255,215,0,0.3)] hover:bg-space-gold/20 hover:scale-[1.02] transition-all uppercase"
+                >
+                  GO TO YOUR UNIVERSE
+                </button>
+              )}
               <RandomUniverseButton
                 label="JUMP TO RANDOM SECTOR"
-                className="px-6 py-3 !text-xs tracking-[0.2em]"
+                className="px-6 py-3 !text-[10px] sm:!text-xs tracking-[0.2em]"
               />
             </motion.div>
 
@@ -249,6 +266,11 @@ export default function Home() {
             </motion.div>
           </motion.div>
         </div>
+      </div>
+
+      {/* ── Login Entry (Bottom Left) ── */}
+      <div className="fixed bottom-6 left-6 z-[100] hidden md:block">
+        <LoginButton />
       </div>
 
       {/* ── System Manual (Desktop only) ── */}
