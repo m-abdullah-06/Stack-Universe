@@ -254,10 +254,10 @@ export function ShareCard({ data }: ShareCardProps) {
               </div>
               <div className="relative group mb-4">
                 <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                  {`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()})](${shareUrl})`}
+                  {`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()}?v=1)](${shareUrl})`}
                 </pre>
                 <button
-                  onClick={() => copyToClipboard(`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()})](${shareUrl})`, 'markdown')}
+                  onClick={() => copyToClipboard(`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()}?v=1)](${shareUrl})`, 'markdown')}
                   className="absolute top-2 right-2 bg-space-gold/10 hover:bg-space-gold/20 text-space-gold border border-space-gold/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
                 >
                   {markdownCopied ? "✓" : "COPY"}
