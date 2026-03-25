@@ -142,7 +142,7 @@ export async function GET(
     return new Response(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 'no-store, max-age=0',
       },
     })
   } catch (err: any) {
