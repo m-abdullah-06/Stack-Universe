@@ -14,16 +14,22 @@ export function ShareCard({ data }: ShareCardProps) {
   const { showShareCard, setShowShareCard } = useUniverseStore();
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://stack-universe.vercel.app";
   const shareUrl = `${appUrl}/universe/${data.username}`;
+  const embedUrl = `${appUrl}/embed/${data.username}`;
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = (text: string, type: 'link' | 'embed') => {
+    navigator.clipboard.writeText(text);
+    if (type === 'link') setCopied(true);
+    else setEmbedCopied(true);
+    setTimeout(() => {
+      if (type === 'link') setCopied(false);
+      else setEmbedCopied(false);
+    }, 2000);
   };
 
   const downloadCard = async () => {
@@ -217,25 +223,52 @@ export function ShareCard({ data }: ShareCardProps) {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={copyLink}
-              className="hud-panel rounded px-5 py-2.5 font-mono text-xs text-space-cyan hover:bg-space-cyan/10 transition-colors tracking-wider"
-            >
-              {copied ? "✓ COPIED!" : "⧉ COPY LINK"}
-            </button>
-            <button
-              onClick={downloadCard}
-              disabled={downloading}
-              className="hud-panel rounded px-5 py-2.5 font-mono text-xs text-space-magenta hover:bg-space-magenta/10 transition-colors tracking-wider disabled:opacity-50"
-            >
-              {downloading ? "..." : "↓ DOWNLOAD CARD"}
-            </button>
+          <div className="flex flex-col gap-3 w-full max-w-sm">
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <button
+                onClick={() => copyToClipboard(shareUrl, 'link')}
+                className="hud-panel rounded px-5 py-2.5 font-mono text-xs text-space-cyan hover:bg-space-cyan/10 transition-colors tracking-wider flex items-center justify-center gap-2"
+              >
+                {copied ? "✓ COPIED!" : "⧉ COPY LINK"}
+              </button>
+              <button
+                onClick={downloadCard}
+                disabled={downloading}
+                className="hud-panel rounded px-5 py-2.5 font-mono text-xs text-space-magenta hover:bg-space-magenta/10 transition-colors tracking-wider disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {downloading ? "..." : "↓ DOWNLOAD CARD"}
+              </button>
+            </div>
+
+            {/* Embed Section */}
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4 w-full">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-orbitron font-bold text-[10px] text-space-gold tracking-widest uppercase">
+                  Embed Widget
+                </p>
+                <span className="font-mono text-[8px] text-gray-600">400 x 180</span>
+              </div>
+              <div className="relative group">
+                <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                  {`<iframe src="${embedUrl}" width="400" height="180" frameborder="0"></iframe>`}
+                </pre>
+                <button
+                  onClick={() => copyToClipboard(`<iframe src="${embedUrl}" width="400" height="180" frameborder="0"></iframe>`, 'embed')}
+                  className="absolute top-2 right-2 bg-space-gold/10 hover:bg-space-gold/20 text-space-gold border border-space-gold/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
+                >
+                  {embedCopied ? "✓" : "COPY"}
+                </button>
+              </div>
+              <p className="mt-2 font-mono text-[8px] text-gray-600 text-center uppercase tracking-tighter">
+                Perfect for your GitHub README
+              </p>
+            </div>
+
             <button
               onClick={() => setShowShareCard(false)}
-              className="font-mono text-xs text-gray-600 hover:text-white transition-colors px-2"
+              className="mt-2 font-mono text-[9px] text-gray-600 hover:text-white transition-colors tracking-widest uppercase py-2"
             >
-              ✕
+              [ Close ]
             </button>
           </div>
         </motion.div>
