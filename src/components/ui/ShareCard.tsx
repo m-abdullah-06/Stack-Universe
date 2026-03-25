@@ -15,6 +15,7 @@ export function ShareCard({ data }: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
+  const [markdownCopied, setMarkdownCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const appUrl =
@@ -22,13 +23,16 @@ export function ShareCard({ data }: ShareCardProps) {
   const shareUrl = `${appUrl}/universe/${data.username}`;
   const embedUrl = `${appUrl}/embed/${data.username}`;
 
-  const copyToClipboard = (text: string, type: 'link' | 'embed') => {
+  const copyToClipboard = (text: string, type: 'link' | 'embed' | 'markdown') => {
     navigator.clipboard.writeText(text);
     if (type === 'link') setCopied(true);
-    else setEmbedCopied(true);
+    else if (type === 'embed') setEmbedCopied(true);
+    else if (type === 'markdown') setMarkdownCopied(true);
+    
     setTimeout(() => {
       if (type === 'link') setCopied(false);
-      else setEmbedCopied(false);
+      else if (type === 'embed') setEmbedCopied(false);
+      else if (type === 'markdown') setMarkdownCopied(false);
     }, 2000);
   };
 
@@ -244,23 +248,41 @@ export function ShareCard({ data }: ShareCardProps) {
             <div className="bg-white/5 border border-white/10 rounded-lg p-4 w-full">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-orbitron font-bold text-[10px] text-space-gold tracking-widest uppercase">
-                  Embed Widget
+                  GitHub README (Animated)
                 </p>
-                <span className="font-mono text-[8px] text-gray-600">400 x 180</span>
+                <span className="font-mono text-[8px] text-gray-600">Markdown Link</span>
+              </div>
+              <div className="relative group mb-4">
+                <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                  {`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()})](${shareUrl})`}
+                </pre>
+                <button
+                  onClick={() => copyToClipboard(`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()})](${shareUrl})`, 'markdown')}
+                  className="absolute top-2 right-2 bg-space-gold/10 hover:bg-space-gold/20 text-space-gold border border-space-gold/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
+                >
+                  {markdownCopied ? "✓" : "COPY"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-orbitron font-bold text-[10px] text-gray-500 tracking-widest uppercase">
+                  Website Overlay
+                </p>
+                <span className="font-mono text-[8px] text-gray-600">Iframe Code</span>
               </div>
               <div className="relative group">
-                <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed opacity-60">
                   {`<iframe src="${embedUrl}" width="400" height="180" frameborder="0"></iframe>`}
                 </pre>
                 <button
                   onClick={() => copyToClipboard(`<iframe src="${embedUrl}" width="400" height="180" frameborder="0"></iframe>`, 'embed')}
-                  className="absolute top-2 right-2 bg-space-gold/10 hover:bg-space-gold/20 text-space-gold border border-space-gold/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
+                  className="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
                 >
                   {embedCopied ? "✓" : "COPY"}
                 </button>
               </div>
-              <p className="mt-2 font-mono text-[8px] text-gray-600 text-center uppercase tracking-tighter">
-                Perfect for your GitHub README
+              <p className="mt-3 font-mono text-[8px] text-gray-600 text-center uppercase tracking-tighter">
+                Copy the Markdown link for your GitHub profile!
               </p>
             </div>
 
