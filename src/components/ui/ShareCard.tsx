@@ -250,7 +250,7 @@ export function ShareCard({ data }: ShareCardProps) {
                 <p className="font-orbitron font-bold text-[10px] text-space-gold tracking-widest uppercase">
                   GitHub README (Animated)
                 </p>
-                <span className="font-mono text-[8px] text-gray-600">Markdown Link</span>
+                <span className="font-mono text-[8px] text-gray-600">480 x 180</span>
               </div>
               <div className="relative group mb-4">
                 <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
@@ -272,7 +272,7 @@ export function ShareCard({ data }: ShareCardProps) {
               </div>
               <div className="relative group">
                 <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed opacity-60">
-                  {`<iframe src="${embedUrl}" width="400" height="180" frameborder="0"></iframe>`}
+                  {`<iframe src="${embedUrl}" width="480" height="180" frameborder="0"></iframe>`}
                 </pre>
                 <button
                   onClick={() => copyToClipboard(`<iframe src="${embedUrl}" width="400" height="180" frameborder="0"></iframe>`, 'embed')}
