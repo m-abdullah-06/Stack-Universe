@@ -615,7 +615,9 @@ export function RepoPlanet({
 
   const { claimData, setHoveredRepo, setHoveredRepoSummary, currentUniverse, queriedPlanetNames } = useUniverseStore()
   const isPinned = claimData?.pinned_repos?.includes(repo.name)
-  const isQueryMatch = queriedPlanetNames.includes(repo.name)
+  const isQueryMatch = queriedPlanetNames.some(name => 
+    name.toLowerCase().trim() === repo.name.toLowerCase().trim()
+  )
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const baseColor  = getLanguageColor(repo.language ?? '')

@@ -10,29 +10,36 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = `
-      You are an AI assistant that helps developers search their GitHub universes.
-      The user is asking a question: "${query}"
+      You are an AI assistant helping a developer find specific repositories in their "GitHub Universe" visualization.
+      The user is asking: "${query}"
       
-      From the following list of repositories, identify and return a subset of names that best match or answer the user's query.
-      
+      Below is the list of repositories available (Name: Description). 
+      Identify which ones match the user's intent.
+
       Repositories:
       ${repos.map((r: any) => `${r.name}: ${r.description || 'No description'}`).join("\n")}
 
-      Rules:
-      - Return ONLY the exact repository names that match.
-      - Separate names with commas (e.g., repo1, repo2, repo3).
-      - Do not include any other text, reasoning, markdown formatting, or preamble.
-      - If no repositories match, return the exact word "NONE".
-      - Be intelligent about matching context (e.g., if user asks for "AI projects", find repos with "ai", "ml", "llama", "gpt" in the name or description).
+      CRITICAL RULES:
+      1. Return ONLY a comma-separated list of the EXACT repository names from the list above.
+      2. If multiple match, separate them with commas: repo-name-1, repo-name-2
+      3. Do NOT add any explanations, markdown, quotes, numbering, or preamble.
+      4. If nothing matches, respond with exactly: NONE
+      5. Match intelligently (e.g. "AI" matches repos with "machine learning", "gpt", "bot", etc. in name/description).
     `;
 
     const result = await getGroqCompletion(prompt);
     
-    if (!result || result.trim() === "NONE") {
+    const sanitizedResult = result.trim().replace(/^["']+|["']+$/g, '');
+
+    if (!sanitizedResult || sanitizedResult === "NONE") {
       return NextResponse.json({ matches: [] });
     }
 
-    const matches = result.split(",").map(name => name.trim()).filter(name => name.length > 0);
+    // Split by comma or newline, then strip away common AI list artifacts like numbers, bullets, and quotes
+    const matches = sanitizedResult
+      .split(/,|\n/)
+      .map(name => name.replace(/^[\d\s.\-*]+/, '').replace(/["']/g, '').trim())
+      .filter(name => name.length > 0);
 
     return NextResponse.json({ matches });
   } catch (error) {
