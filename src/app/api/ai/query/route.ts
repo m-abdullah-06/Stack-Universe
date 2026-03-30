@@ -13,18 +13,17 @@ export async function POST(req: NextRequest) {
       You are an AI assistant that helps developers search their GitHub universes.
       The user is asking a question: "${query}"
       
-      From the following list of repository names, identify and return a subset of names that best match or answer the user's query.
+      From the following list of repositories, identify and return a subset of names that best match or answer the user's query.
       
-      Repository Names:
-      ${repos.map((r: any) => r.name).join(", ")}
+      Repositories:
+      ${repos.map((r: any) => `${r.name}: ${r.description || 'No description'}`).join("\n")}
 
       Rules:
       - Return ONLY the exact repository names that match.
-      - Separate names with commas.
-      - If no repositories match, return "NONE".
-      - Be intelligent about matching (e.g., if user asks for "AI projects", find repos with "ai", "ml", "llama", "gpt" in the name or description).
-
-      Return format: repo1, repo2, repo3
+      - Separate names with commas (e.g., repo1, repo2, repo3).
+      - Do not include any other text, reasoning, markdown formatting, or preamble.
+      - If no repositories match, return the exact word "NONE".
+      - Be intelligent about matching context (e.g., if user asks for "AI projects", find repos with "ai", "ml", "llama", "gpt" in the name or description).
     `;
 
     const result = await getGroqCompletion(prompt);
