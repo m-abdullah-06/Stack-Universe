@@ -3,47 +3,43 @@ import { getGroqCompletion } from "@/lib/groq";
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, repos } = await req.json();
+    const { query, universeData } = await req.json();
 
-    if (!query || !repos) {
-      return NextResponse.json({ error: "Missing query or repo data" }, { status: 400 });
+    if (!query || !universeData || !universeData.repos) {
+      return NextResponse.json({ error: "Missing query or universe data" }, { status: 400 });
     }
 
     const prompt = `
-      You are an AI assistant helping a developer find specific repositories in their "GitHub Universe" visualization.
-      The user is asking: "${query}"
+      You are a high-precision repository search engine. 
+      Your task is to identify which repositories from the list below match the user's search query.
       
-      Below is the list of repositories available (Name: Description). 
-      Identify which ones match the user's intent.
+      Repositories available for matching:
+      ${universeData.repos.map((r: any) => `- ${r.name}: ${r.description || 'No description'} | Language: ${r.language || 'N/A'}`).join("\n")}
 
-      Repositories:
-      ${repos.map((r: any) => `${r.name}: ${r.description || 'No description'}`).join("\n")}
+      USER SEARCH QUERY: "${query}"
 
-      CRITICAL RULES:
-      1. Return ONLY a comma-separated list of the EXACT repository names from the list above.
-      2. If multiple match, separate them with commas: repo-name-1, repo-name-2
-      3. Do NOT add any explanations, markdown, quotes, numbering, or preamble.
-      4. If nothing matches, respond with exactly: NONE
-      5. Match intelligently (e.g. "AI" matches repos with "machine learning", "gpt", "bot", etc. in name/description).
+      TASK:
+      1. Identify exactly which repository names from the list above match the query.
+      2. Return ONLY a JSON object with the matched names.
+
+      OUTPUT FORMAT (JSON ONLY):
+      {
+        "matches": ["repo-name-1", "repo-name-2"]
+      }
     `;
 
     const result = await getGroqCompletion(prompt);
+    const cleanJson = result.replace(/```json|```/g, "").trim();
     
-    const sanitizedResult = result.trim().replace(/^["']+|["']+$/g, '');
-
-    if (!sanitizedResult || sanitizedResult === "NONE") {
+    try {
+      const parsed = JSON.parse(cleanJson);
+      return NextResponse.json(parsed);
+    } catch (err) {
+      console.error("Failed to parse search JSON:", result);
       return NextResponse.json({ matches: [] });
     }
-
-    // Split by comma or newline, then strip away common AI list artifacts like numbers, bullets, and quotes
-    const matches = sanitizedResult
-      .split(/,|\n/)
-      .map(name => name.replace(/^[\d\s.\-*]+/, '').replace(/["']/g, '').trim())
-      .filter(name => name.length > 0);
-
-    return NextResponse.json({ matches });
   } catch (error) {
-    console.error("AI Query Error:", error);
-    return NextResponse.json({ error: "Failed to process query" }, { status: 500 });
+    console.error("AI Search Error:", error);
+    return NextResponse.json({ error: "Search logic offline" }, { status: 500 });
   }
 }

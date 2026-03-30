@@ -15,6 +15,7 @@ import { RepoSummaryHUD } from '@/components/ui/RepoSummaryHUD'
 import { NarratorPanel } from '@/components/ui/NarratorPanel'
 import { RoastPanel } from '@/components/ui/RoastPanel'
 import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
+import { IdentityPanel } from '@/components/ui/IdentityPanel'
 import { useUniverseStore } from '@/store'
 import type { UniverseData } from '@/types'
 
@@ -173,6 +174,7 @@ export default function UniverseClient() {
           <NarratorPanel data={data} />
           <RoastPanel data={data} />
           <HoroscopePanel data={data} />
+          <IdentityPanel data={data} />
           <CustomisePanel data={data} />
           <SpaceWeather data={data} />
           <HallOfGiants />

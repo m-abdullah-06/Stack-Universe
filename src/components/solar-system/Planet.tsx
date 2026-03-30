@@ -7,6 +7,8 @@ import * as THREE from 'three'
 import { Moon } from './Moon'
 import type { LanguageData } from '@/types'
 import { getOrbitSpeed } from '@/lib/universe-score'
+import { useUniverseStore } from '@/store'
+import { QueryPulseRing, QueryMatchBeacon } from './RepoPlanet'
 
 interface PlanetProps {
   language: LanguageData
@@ -36,10 +38,20 @@ export function Planet({
   const [hovered, setHovered] = useState(false)
   const angleRef = useRef(offset)
 
+  const { queriedPlanetNames } = useUniverseStore()
+
   const orbitSpeed = useMemo(
     () => getOrbitSpeed(language.daysSinceActivity) * 0.3,
     [language.daysSinceActivity]
   )
+
+  // Pulse if ANY repo in this language matches the query
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const isQueryMatch = useMemo(() => {
+    if (queriedPlanetNames.length === 0) return false
+    const matchSet = new Set(queriedPlanetNames.map(normalize))
+    return language.repos.some(r => matchSet.has(normalize(r.name)))
+  }, [queriedPlanetNames, language.repos])
 
   const tiltDeg = ORBIT_TILTS[index % ORBIT_TILTS.length]
   const tilt = (tiltDeg * Math.PI) / 180
@@ -126,6 +138,14 @@ export function Planet({
               side={THREE.DoubleSide}
             />
           </Ring>
+        )}
+
+        {/* AI Query Match Pulse & Beacon */}
+        {isQueryMatch && (
+          <group>
+            <QueryPulseRing size={size} />
+            <QueryMatchBeacon size={size} name={language.name} color={language.color} />
+          </group>
         )}
 
         {/* Moons — fixed size, tighter orbit */}

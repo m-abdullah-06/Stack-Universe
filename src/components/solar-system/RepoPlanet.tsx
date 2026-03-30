@@ -615,8 +615,11 @@ export function RepoPlanet({
 
   const { claimData, setHoveredRepo, setHoveredRepoSummary, currentUniverse, queriedPlanetNames } = useUniverseStore()
   const isPinned = claimData?.pinned_repos?.includes(repo.name)
+  
+  // Robust matching: strip all non-alphanumeric for comparison
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
   const isQueryMatch = queriedPlanetNames.some(name => 
-    name.toLowerCase().trim() === repo.name.toLowerCase().trim()
+    normalize(name) === normalize(repo.name)
   )
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -805,6 +808,15 @@ export function RepoPlanet({
 
         {/* Planet body — Optimized Technical Glow */}
         {isPinned && <PinnedRepoRing size={size} />}
+        
+        {/* AI Query Match Pulse & Beacon */}
+        {isQueryMatch && (
+          <group>
+            <QueryPulseRing size={size} />
+            <QueryMatchBeacon size={size} name={repo.name} color={planetColor} />
+          </group>
+        )}
+
         <Sphere
           ref={planetRef}
           args={[size, 
@@ -1010,7 +1022,7 @@ export function RepoPlanet({
 }
 
 // AI Query Pulse Effect
-function QueryPulseRing({ size }: { size: number }) {
+export function QueryPulseRing({ size }: { size: number }) {
   const meshRef = useRef<THREE.Mesh>(null)
   
   useFrame(({ clock }) => {
@@ -1026,9 +1038,51 @@ function QueryPulseRing({ size }: { size: number }) {
   })
 
   return (
-    <Ring ref={meshRef} args={[size * 1.9, size * 2.0, 64]} rotation={[-Math.PI / 2, 0, 0]}>
-      <meshBasicMaterial color="#00e5ff" transparent opacity={0.4} side={THREE.DoubleSide} />
+    <Ring ref={meshRef} args={[size * 1.9, size * 2.05, 64]} rotation={[-Math.PI / 2, 0, 0]}>
+      <meshBasicMaterial 
+        color="#00e5ff" 
+        transparent 
+        opacity={0.6} 
+        side={THREE.DoubleSide}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+      />
     </Ring>
+  )
+}
+
+// High-visibility beacon for AI matches
+export function QueryMatchBeacon({ size, name, color }: { size: number; name: string; color: string }) {
+  return (
+    <group>
+      {/* Vertical Light Beam */}
+      <mesh position={[0, size * 10, 0]}>
+        <cylinderGeometry args={[size * 0.1, size * 0.8, size * 20, 32, 1, true]} />
+        <meshBasicMaterial 
+          color={color} 
+          transparent 
+          opacity={0.3} 
+          blending={THREE.AdditiveBlending}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+      
+      {/* Point Light focused on planet */}
+      <pointLight intensity={2} distance={size * 5} color={color} />
+
+      {/* Permanent Label */}
+      <Html position={[0, size * 2.5, 0]} center distanceFactor={15}>
+        <div className="flex flex-col items-center gap-1 pointer-events-none select-none whitespace-nowrap">
+          <div className="px-2 py-0.5 bg-space-cyan border border-white text-black font-orbitron font-bold text-[8px] tracking-widest rounded-sm shadow-[0_0_15px_#00e5ff]">
+            NEURAL MATCH
+          </div>
+          <div className="px-3 py-1 bg-black/80 backdrop-blur-md border border-white/20 rounded-md shadow-2xl">
+            <span className="font-mono text-[10px] text-white font-bold tracking-wider">{name}</span>
+          </div>
+        </div>
+      </Html>
+    </group>
   )
 }
 

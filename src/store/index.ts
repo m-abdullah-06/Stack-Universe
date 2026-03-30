@@ -49,6 +49,11 @@ interface UniverseStore {
 
   queriedPlanetNames: string[]
   setQueriedPlanetNames: (names: string[]) => void
+
+  showIdentityPanel: boolean
+  setShowIdentityPanel: (v: boolean) => void
+  identityObservations: string[]
+  setIdentityObservations: (obs: string[]) => void
 }
 
 export const useUniverseStore = create<UniverseStore>((set) => ({
@@ -98,5 +103,10 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   setShowHoroscope: (v) => set({ showHoroscope: v }),
 
   queriedPlanetNames: [],
-  setQueriedPlanetNames: (names) => set({ queriedPlanetNames: names }),
+  setQueriedPlanetNames: (names: string[]) => set({ queriedPlanetNames: names }),
+
+  showIdentityPanel: false,
+  setShowIdentityPanel: (v: boolean) => set({ showIdentityPanel: v }),
+  identityObservations: [],
+  setIdentityObservations: (obs: string[]) => set({ identityObservations: obs }),
 }))

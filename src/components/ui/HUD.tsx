@@ -1,8 +1,9 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useState, useRef } from 'react'
 import type { UniverseData } from '@/types'
 import { useUniverseStore } from '@/store'
 import { LoginButton } from './LoginButton'
@@ -26,8 +27,13 @@ export function HUD({ data }: HUDProps) {
     setShowNarrator,
     setShowRoast,
     setShowHoroscope,
-    setQueriedPlanetNames
+    setQueriedPlanetNames,
+    setShowIdentityPanel,
   } = useUniverseStore()
+  
+  const [isQuerying, setIsQuerying] = useState(false)
+  const [queryFeedback, setQueryFeedback] = useState<string | null>(null)
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isOwner = session?.user && (session.user as any).login === data.username
   const isClaimed = !!claimData || !!data.claim
@@ -145,6 +151,80 @@ export function HUD({ data }: HUDProps) {
               <span className="text-[14px] group-hover:scale-110 transition-transform">✨</span>
               <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">Horoscope</span>
             </button>
+            <button onClick={() => setShowIdentityPanel(true)} className="flex flex-col items-center gap-1 group">
+              <span className="text-[14px] group-hover:scale-110 transition-transform">⚙️</span>
+              <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">Identity</span>
+            </button>
+          </div>
+
+          {/* Search Box (Mobile) */}
+          <div className="px-3 pb-3">
+            <div className="relative group">
+              <input 
+                type="text" 
+                className="w-full bg-white/[0.05] border border-white/10 rounded-full py-2 pl-8 pr-4 font-mono text-[9px] text-white placeholder:text-gray-600 focus:outline-none focus:border-space-cyan/50 transition-all"
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    const input = e.currentTarget;
+                    const queryInput = input.value;
+                    if (!queryInput.trim() || isQuerying) return;
+
+                    setIsQuerying(true);
+                    setQueryFeedback(null);
+                    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+
+                    try {
+                      const res = await fetch('/api/ai/query', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: queryInput, universeData: data }),
+                      });
+                      
+                      if (!res.ok) throw new Error('Search failed');
+                      
+                      const json = await res.json();
+                      
+                      if (json.matches && json.matches.length > 0) {
+                        setQueriedPlanetNames(json.matches);
+                        setQueryFeedback(`${json.matches.length} matches`);
+                        input.value = ''; 
+                        setTimeout(() => setQueriedPlanetNames([]), 30000);
+                      } else {
+                        setQueryFeedback('No matches');
+                      }
+                    } catch (err) {
+                      console.error('Search Error:', err);
+                      setQueryFeedback('Error');
+                    } finally {
+                      setIsQuerying(false);
+                      feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 3000);
+                    }
+                  }
+                }}
+                placeholder="Search planets..."
+              />
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
+                {isQuerying ? (
+                  <div className="w-3 h-3 border-2 border-space-cyan border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                )}
+              </div>
+              <AnimatePresence>
+                {queryFeedback && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="absolute -top-6 right-0 text-[7px] font-mono text-space-cyan tracking-widest bg-black/80 px-1.5 py-0.5 rounded border border-white/10"
+                  >
+                    {queryFeedback.toUpperCase()}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
@@ -262,52 +342,85 @@ export function HUD({ data }: HUDProps) {
                 <span className="text-xs">🔥</span> ROAST ME
               </button>
             </div>
-            <button onClick={() => setShowHoroscope(true)}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.03] border border-purple-500/20 hover:bg-purple-500/10 transition-all font-orbitron text-[9px] text-purple-400 uppercase tracking-wider">
-              <span className="text-xs">✨</span> GENERATE HOROSCOPE
-            </button>
-          </div>
+              <button onClick={() => setShowHoroscope(true)}
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.03] border border-purple-500/20 hover:bg-purple-500/10 transition-all font-orbitron text-[9px] text-purple-400 uppercase tracking-wider">
+                <span className="text-xs">✨</span> GENERATE HOROSCOPE
+              </button>
+              <button onClick={() => setShowIdentityPanel(true)}
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.03] border border-space-cyan/20 hover:bg-space-cyan/10 transition-all font-orbitron text-[9px] text-space-cyan uppercase tracking-wider">
+                <span className="text-xs">⚙️</span> DIAGNOSE IDENTITY
+              </button>
+            </div>
 
           {/* NLQ Input */}
           <div className="pt-2">
             <div className="relative group">
               <input 
                 type="text" 
-                placeholder="Ask anything about this universe..." 
                 className="w-full bg-white/[0.03] border border-white/10 rounded-lg py-2.5 pl-9 pr-4 font-mono text-[10px] text-white placeholder:text-gray-600 focus:outline-none focus:border-space-cyan/50 transition-all"
                 onKeyDown={async (e) => {
                   if (e.key === 'Enter') {
                     const input = e.currentTarget;
                     const queryInput = input.value;
-                    if (!queryInput.trim()) return;
+                    if (!queryInput.trim() || isQuerying) return;
 
-                    input.disabled = true;
+                    setIsQuerying(true);
+                    setQueryFeedback(null);
+                    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+
                     try {
                       const res = await fetch('/api/ai/query', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: queryInput, repos: data.repos }),
+                        body: JSON.stringify({ query: queryInput, universeData: data }),
                       });
+                      
+                      if (!res.ok) throw new Error('Search failed');
+                      
                       const json = await res.json();
-                      if (json.matches) {
+                      
+                      if (json.matches && json.matches.length > 0) {
                         setQueriedPlanetNames(json.matches);
-                        // Reset after 8s
-                        setTimeout(() => setQueriedPlanetNames([]), 8000);
+                        setQueryFeedback(`${json.matches.length} matches identified`);
+                        input.value = ''; // Clear on success
+                        
+                        // Reset pulse after 30s
+                        setTimeout(() => setQueriedPlanetNames([]), 30000);
+                      } else {
+                        setQueryFeedback('No matches found');
                       }
                     } catch (err) {
-                      console.error('Query Error:', err);
+                      console.error('Search Error:', err);
+                      setQueryFeedback('Signal lost');
                     } finally {
-                      input.disabled = false;
-                      input.value = '';
+                      setIsQuerying(false);
+                      feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 4000);
                     }
                   }
                 }}
+                placeholder="Search for planet or repository..."
               />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-space-cyan transition-colors">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {isQuerying ? (
+                  <div className="w-3.5 h-3.5 border-2 border-space-cyan border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3.5 h-3.5 text-gray-600 group-focus-within:text-space-cyan transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                )}
               </div>
+              <AnimatePresence>
+                {queryFeedback && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute -top-7 right-0 text-[9px] font-mono text-space-cyan tracking-widest bg-black/40 backdrop-blur-md px-2 py-1 rounded border border-white/5"
+                  >
+                    {queryFeedback.toUpperCase()}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
