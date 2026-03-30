@@ -53,12 +53,12 @@ function getStarType(totalRepos: number): StarType {
 }
 
 const STAR_CONFIG: Record<StarType, { color: string; coronaColor: string; intensity: number }> = {
-  dwarf:      { color: '#ff5500', coronaColor: '#ff2200', intensity: 0.8 },
-  yellow:     { color: '#ffcc00', coronaColor: '#ff8800', intensity: 0.9 },
-  subgiant:   { color: '#ffeeaa', coronaColor: '#ffba00', intensity: 1.0 },
-  giant:      { color: '#ffffff', coronaColor: '#00ccff', intensity: 1.2 },
-  supergiant: { color: '#00f3ff', coronaColor: '#0077ff', intensity: 1.5 },
-  hypergiant: { color: '#ffffff', coronaColor: '#ff00e5', intensity: 1.8 },
+  dwarf:      { color: '#ff5500', coronaColor: '#ff2200', intensity: 1.5 },
+  yellow:     { color: '#ffcc00', coronaColor: '#ff8800', intensity: 1.8 },
+  subgiant:   { color: '#ffeeaa', coronaColor: '#ffba00', intensity: 2.2 },
+  giant:      { color: '#ffffff', coronaColor: '#00ccff', intensity: 2.8 },
+  supergiant: { color: '#00f3ff', coronaColor: '#0077ff', intensity: 3.5 },
+  hypergiant: { color: '#ffffff', coronaColor: '#ff00e5', intensity: 4.5 },
 }
 
 function ParticleStreams({ color, count = 120 }: { color: string; count?: number }) {
@@ -115,10 +115,10 @@ export function CentralStar({ score, totalRepos, totalStars, onClick }: CentralS
   const isHyper  = starType === 'hypergiant'
 
   const starSize = useMemo(() => {
-    return Math.max(1.2, Math.min(4.5,
-      1.2 +
-      Math.log10(totalRepos + 1) * 0.4 +
-      Math.log10(totalStars + 1) * 0.3
+    return Math.max(1.8, Math.min(6.0,
+      1.8 +
+      Math.log10(totalRepos + 1) * 0.6 +
+      Math.log10(totalStars + 1) * 0.4
     ))
   }, [totalRepos, totalStars])
 
@@ -142,13 +142,13 @@ export function CentralStar({ score, totalRepos, totalStars, onClick }: CentralS
   return (
     <group onClick={onClick}>
       {/* Outer glow */}
-      <Sphere ref={glowRef} args={[starSize * 2.8, 32, 32]}>
-        <meshBasicMaterial color={cfg.color} transparent opacity={0.04} side={THREE.BackSide} />
+      <Sphere ref={glowRef} args={[starSize * 3.5, 32, 32]}>
+        <meshBasicMaterial color={cfg.color} transparent opacity={0.08} side={THREE.BackSide} />
       </Sphere>
 
       {/* Mid glow */}
-      <Sphere args={[starSize * 2.0, 32, 32]}>
-        <meshBasicMaterial color={cfg.coronaColor} transparent opacity={0.07} side={THREE.BackSide} />
+      <Sphere args={[starSize * 2.5, 32, 32]}>
+        <meshBasicMaterial color={cfg.coronaColor} transparent opacity={0.15} side={THREE.BackSide} />
       </Sphere>
 
       {/* Glow rings — giant+ */}
@@ -175,11 +175,11 @@ export function CentralStar({ score, totalRepos, totalStars, onClick }: CentralS
         <MeshDistortMaterial
           color={isHyper ? '#ffccff' : cfg.coronaColor}
           emissive={cfg.coronaColor}
-          emissiveIntensity={0.4}
+          emissiveIntensity={1.0}
           distort={0.25}
           speed={isHyper ? 4 : 2}
           transparent
-          opacity={0.55}
+          opacity={0.7}
         />
       </Sphere>
 
@@ -197,8 +197,8 @@ export function CentralStar({ score, totalRepos, totalStars, onClick }: CentralS
 
       <ClaimPulse active={showClaimPulse} />
 
-      <pointLight color={cfg.color} intensity={score > 10000 ? 3.5 : 2.5} distance={220} decay={1} />
-      <pointLight color={cfg.coronaColor} intensity={0.6} distance={350} decay={0.5} />
+      <pointLight color={cfg.color} intensity={score > 10000 ? 15 : 10} distance={400} decay={1} />
+      <pointLight color={cfg.coronaColor} intensity={5} distance={500} decay={0.8} />
     </group>
   )
 }

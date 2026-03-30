@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { UniverseData, StoredUniverse, LeaderboardEntry, ViewMode } from '@/types'
+import type { UniverseData, StoredUniverse, LeaderboardEntry, ViewMode, GitHubRepo } from '@/types'
 
 interface UniverseStore {
   currentUniverse: UniverseData | null
@@ -32,6 +32,23 @@ interface UniverseStore {
 
   showClaimPulse: boolean
   setShowClaimPulse: (v: boolean) => void
+  
+  hoveredRepo: GitHubRepo | null
+  setHoveredRepo: (repo: GitHubRepo | null) => void
+  hoveredRepoSummary: string | null
+  setHoveredRepoSummary: (summary: string | null) => void
+
+  showNarrator: boolean
+  setShowNarrator: (v: boolean) => void
+
+  showRoast: boolean
+  setShowRoast: (v: boolean) => void
+
+  showHoroscope: boolean
+  setShowHoroscope: (v: boolean) => void
+
+  queriedPlanetNames: string[]
+  setQueriedPlanetNames: (names: string[]) => void
 }
 
 export const useUniverseStore = create<UniverseStore>((set) => ({
@@ -65,4 +82,21 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
 
   showClaimPulse: false,
   setShowClaimPulse: (v) => set({ showClaimPulse: v }),
+
+  hoveredRepo: null,
+  setHoveredRepo: (repo) => set({ hoveredRepo: repo }),
+  hoveredRepoSummary: null,
+  setHoveredRepoSummary: (summary) => set({ hoveredRepoSummary: summary }),
+
+  showNarrator: false,
+  setShowNarrator: (v) => set({ showNarrator: v }),
+
+  showRoast: false,
+  setShowRoast: (v) => set({ showRoast: v }),
+
+  showHoroscope: false,
+  setShowHoroscope: (v) => set({ showHoroscope: v }),
+
+  queriedPlanetNames: [],
+  setQueriedPlanetNames: (names) => set({ queriedPlanetNames: names }),
 }))

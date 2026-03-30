@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useMemo } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { Sphere, Ring, MeshDistortMaterial, Html } from '@react-three/drei'
 import { useUniverseStore } from '@/store'
 import * as THREE from 'three'
@@ -613,8 +613,10 @@ export function RepoPlanet({
   const [hovered, setHovered] = useState(false)
   const angleRef  = useRef(offset)
 
-  const { claimData } = useUniverseStore()
+  const { claimData, setHoveredRepo, setHoveredRepoSummary, currentUniverse, queriedPlanetNames } = useUniverseStore()
   const isPinned = claimData?.pinned_repos?.includes(repo.name)
+  const isQueryMatch = queriedPlanetNames.includes(repo.name)
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const baseColor  = getLanguageColor(repo.language ?? '')
   const daysSince  = getDaysSinceActivity(repo.pushed_at)
@@ -672,10 +674,10 @@ export function RepoPlanet({
   )
 
   const size = useMemo(() => {
-    const log = Math.log10(repo.stargazers_count + 1) * 0.55
-    if (tier === 1) return Math.max(0.55, Math.min(1.8, 0.55 + log))
-    if (tier === 2) return Math.max(0.30, Math.min(0.95, 0.30 + log * 0.65))
-    return Math.max(0.14, Math.min(0.36, 0.14 + log * 0.28))
+    const log = Math.log10(repo.stargazers_count + 1) * 0.8
+    if (tier === 1) return Math.max(0.8, Math.min(2.8, 0.8 + log))
+    if (tier === 2) return Math.max(0.45, Math.min(1.4, 0.45 + log * 0.8))
+    return Math.max(0.25, Math.min(0.6, 0.25 + log * 0.5))
   }, [repo.stargazers_count, tier])
 
   // Visual properties derived from health tier
@@ -686,8 +688,8 @@ export function RepoPlanet({
           return {
             planetColor:      baseColor,
             atmosColor:       '#aaffdd',
-            atmosOpacity:     hovered || isSelected ? 0.22 : 0.12,
-            emissiveIntensity: hovered || isSelected ? 0.85 : 0.40,
+            atmosOpacity:     hovered || isSelected ? 0.35 : 0.18,
+            emissiveIntensity: hovered || isSelected ? 1.5 : 0.7,
             distort:           0.04,
             distortSpeed:      1.0,
           }
@@ -695,8 +697,8 @@ export function RepoPlanet({
           return {
             planetColor:      baseColor,
             atmosColor:       '#ff3311',
-            atmosOpacity:     hovered || isSelected ? 0.25 : 0.14,
-            emissiveIntensity: hovered || isSelected ? 0.50 : 0.18,
+            atmosOpacity:     hovered || isSelected ? 0.40 : 0.22,
+            emissiveIntensity: hovered || isSelected ? 1.0 : 0.4,
             distort:           0.18,
             distortSpeed:      2.5,
           }
@@ -704,10 +706,10 @@ export function RepoPlanet({
         default:
           // Desaturate by mixing toward dark grey
           return {
-            planetColor:      '#2a2a35',
-            atmosColor:       '#1a1a25',
-            atmosOpacity:     hovered || isSelected ? 0.12 : 0.05,
-            emissiveIntensity: hovered || isSelected ? 0.15 : 0.04,
+            planetColor:      '#3a3a45',
+            atmosColor:       '#2a2a35',
+            atmosOpacity:     hovered || isSelected ? 0.20 : 0.08,
+            emissiveIntensity: hovered || isSelected ? 0.4 : 0.12,
             distort:           0.02,
             distortSpeed:      0.4,
           }
@@ -731,9 +733,17 @@ export function RepoPlanet({
       }))
   }, [tier, repoLanguages, size])
 
+  // Smooth speed interpolation for hover slowdown
+  const smoothSpeed = useRef(orbitSpeed)
+
   useFrame((state, delta) => {
     if (isSelected) return
-    angleRef.current += orbitSpeed * delta
+
+    // Smoothly transition speed: near-zero when hovered, full when not
+    const targetSpeed = hovered ? orbitSpeed * 0.05 : orbitSpeed
+    smoothSpeed.current += (targetSpeed - smoothSpeed.current) * Math.min(delta * 4, 1)
+
+    angleRef.current += smoothSpeed.current * delta
     if (groupRef.current) {
       const tilt = (index % 5) * 0.08
       groupRef.current.position.set(
@@ -761,11 +771,11 @@ export function RepoPlanet({
         rotation={[-Math.PI / 2, 0, 0]}
       >
         <meshBasicMaterial
-          color={isGraveyard ? '#1a1a2a' : planetColor}
+          color={isGraveyard ? '#3a3a4a' : planetColor}
           transparent
           opacity={isGraveyard
-            ? (hovered || isSelected ? 0.08 : 0.02)
-            : (hovered || isSelected ? 0.25 : 0.06)}
+            ? (hovered || isSelected ? 0.15 : 0.06)
+            : (hovered || isSelected ? 0.40 : 0.15)}
           side={THREE.DoubleSide}
           depthWrite={false}
         />
@@ -802,10 +812,42 @@ export function RepoPlanet({
             e.stopPropagation()
             setHovered(true)
             document.body.style.cursor = 'pointer'
+            
+            // Start 2s timer for AI summary
+            if (hoverTimer.current) clearTimeout(hoverTimer.current)
+            hoverTimer.current = setTimeout(async () => {
+              setHoveredRepo(repo)
+              try {
+                const res = await fetch('/api/ai/repo-summary', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    username: currentUniverse?.username,
+                    repoName: repo.name,
+                    description: repo.description,
+                    language: repo.language,
+                    lastPushed: repo.pushed_at,
+                    recentCommits: currentUniverse?.recentCommits.filter(c => c.repoName === repo.name).slice(0, 3)
+                  })
+                })
+                const json = await res.json()
+                if (json.summary) {
+                  setHoveredRepoSummary(json.summary)
+                }
+              } catch (err) {
+                console.error('AI Summary Error:', err)
+              }
+            }, 2000)
           }}
           onPointerOut={() => {
             setHovered(false)
             document.body.style.cursor = 'crosshair'
+            if (hoverTimer.current) {
+              clearTimeout(hoverTimer.current)
+              hoverTimer.current = null
+            }
+            setHoveredRepo(null)
+            setHoveredRepoSummary(null)
           }}
           onClick={(e) => {
             e.stopPropagation()
@@ -873,6 +915,11 @@ export function RepoPlanet({
               transparent opacity={0.6} side={THREE.DoubleSide}
             />
           </Ring>
+        )}
+
+        {/* AI Query Match Pulse */}
+        {isQueryMatch && (
+          <QueryPulseRing size={size} />
         )}
 
         {/* Language moons — tier 1 selected, alive only */}
@@ -958,6 +1005,29 @@ export function RepoPlanet({
     </group>
   </>
 )
+}
+
+// AI Query Pulse Effect
+function QueryPulseRing({ size }: { size: number }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      const t = clock.getElapsedTime() * 4
+      const scale = 1 + Math.sin(t) * 0.15
+      const opacity = 0.4 + Math.sin(t) * 0.3
+      meshRef.current.scale.set(scale, scale, scale)
+      if (meshRef.current.material instanceof THREE.MeshBasicMaterial) {
+        meshRef.current.material.opacity = opacity
+      }
+    }
+  })
+
+  return (
+    <Ring ref={meshRef} args={[size * 1.9, size * 2.0, 64]} rotation={[-Math.PI / 2, 0, 0]}>
+      <meshBasicMaterial color="#00e5ff" transparent opacity={0.4} side={THREE.DoubleSide} />
+    </Ring>
+  )
 }
 
 // Export health calc so SolarSystemScene can use it in the panel

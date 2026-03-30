@@ -10,6 +10,11 @@ import { SpaceWeather } from '@/components/ui/SpaceWeather'
 import { HallOfGiants } from '@/components/ui/HallOfGiants'
 import { ShareCard } from '@/components/ui/ShareCard'
 import { CustomisePanel } from '@/components/ui/CustomisePanel'
+import { UniverseIntelligencePanel } from '@/components/ui/UniverseIntelligencePanel'
+import { RepoSummaryHUD } from '@/components/ui/RepoSummaryHUD'
+import { NarratorPanel } from '@/components/ui/NarratorPanel'
+import { RoastPanel } from '@/components/ui/RoastPanel'
+import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
 import { useUniverseStore } from '@/store'
 import type { UniverseData } from '@/types'
 
@@ -110,7 +115,8 @@ export default function UniverseClient() {
             username={username}
             lightYears={data?.lightYears ?? 25_000_000_000}
             distanceLabel={data?.distanceLabel ?? 'Deep space'}
-            claimData={claimData}
+            claimData={claimData || data?.claim}
+            isReady={!!data || !!errorMsg}
             onComplete={handleCinematicComplete}
           />
         )}
@@ -162,6 +168,11 @@ export default function UniverseClient() {
         >
           <SolarSystemScene data={data} />
           <HUD data={data} />
+          <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
+          <RepoSummaryHUD />
+          <NarratorPanel data={data} />
+          <RoastPanel data={data} />
+          <HoroscopePanel data={data} />
           <CustomisePanel data={data} />
           <SpaceWeather data={data} />
           <HallOfGiants />

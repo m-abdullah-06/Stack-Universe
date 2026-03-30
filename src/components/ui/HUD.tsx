@@ -22,7 +22,11 @@ export function HUD({ data }: HUDProps) {
     setViewMode, 
     claimData, 
     setClaimData,
-    setShowClaimPulse 
+    setShowClaimPulse,
+    setShowNarrator,
+    setShowRoast,
+    setShowHoroscope,
+    setQueriedPlanetNames
   } = useUniverseStore()
 
   const isOwner = session?.user && (session.user as any).login === data.username
@@ -126,6 +130,22 @@ export function HUD({ data }: HUDProps) {
               ))}
             </div>
           </div>
+
+          {/* AI Mobile Actions */}
+          <div className="flex items-center justify-around px-3 pb-3 border-t border-white/5 pt-2 bg-white/[0.02]">
+            <button onClick={() => setShowNarrator(true)} className="flex flex-col items-center gap-1 group">
+              <span className="text-[14px] group-hover:scale-110 transition-transform">🎙</span>
+              <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">Narrate</span>
+            </button>
+            <button onClick={() => setShowRoast(true)} className="flex flex-col items-center gap-1 group">
+              <span className="text-[14px] group-hover:scale-110 transition-transform">🔥</span>
+              <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">Roast</span>
+            </button>
+            <button onClick={() => setShowHoroscope(true)} className="flex flex-col items-center gap-1 group">
+              <span className="text-[14px] group-hover:scale-110 transition-transform">✨</span>
+              <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">Horoscope</span>
+            </button>
+          </div>
         </div>
 
         {/* ── DESKTOP LAYOUT (md+) ── */}
@@ -227,6 +247,68 @@ export function HUD({ data }: HUDProps) {
               className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/[0.03] border border-space-gold/20 hover:bg-space-gold/10 transition-all font-mono text-[8px] text-space-gold/70 hover:text-space-gold uppercase tracking-wider">
               ★ Top
             </button>
+          </div>
+
+          {/* AI Desktop Actions */}
+          <div className="space-y-2 pt-1">
+            <p className="text-[8px] font-mono text-gray-600 uppercase tracking-widest px-1">AI Intelligence Layer</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setShowNarrator(true)}
+                className="flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all font-orbitron text-[9px] text-white uppercase tracking-wider">
+                <span className="text-xs">🎙</span> NARRATE
+              </button>
+              <button onClick={() => setShowRoast(true)}
+                className="flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.03] border border-orange-500/20 hover:bg-orange-500/10 transition-all font-orbitron text-[9px] text-orange-400 uppercase tracking-wider">
+                <span className="text-xs">🔥</span> ROAST ME
+              </button>
+            </div>
+            <button onClick={() => setShowHoroscope(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.03] border border-purple-500/20 hover:bg-purple-500/10 transition-all font-orbitron text-[9px] text-purple-400 uppercase tracking-wider">
+              <span className="text-xs">✨</span> GENERATE HOROSCOPE
+            </button>
+          </div>
+
+          {/* NLQ Input */}
+          <div className="pt-2">
+            <div className="relative group">
+              <input 
+                type="text" 
+                placeholder="Ask anything about this universe..." 
+                className="w-full bg-white/[0.03] border border-white/10 rounded-lg py-2.5 pl-9 pr-4 font-mono text-[10px] text-white placeholder:text-gray-600 focus:outline-none focus:border-space-cyan/50 transition-all"
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    const input = e.currentTarget;
+                    const queryInput = input.value;
+                    if (!queryInput.trim()) return;
+
+                    input.disabled = true;
+                    try {
+                      const res = await fetch('/api/ai/query', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: queryInput, repos: data.repos }),
+                      });
+                      const json = await res.json();
+                      if (json.matches) {
+                        setQueriedPlanetNames(json.matches);
+                        // Reset after 8s
+                        setTimeout(() => setQueriedPlanetNames([]), 8000);
+                      }
+                    } catch (err) {
+                      console.error('Query Error:', err);
+                    } finally {
+                      input.disabled = false;
+                      input.value = '';
+                    }
+                  }
+                }}
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-space-cyan transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
           </div>
 
         </div>

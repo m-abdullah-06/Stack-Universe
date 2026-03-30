@@ -39,7 +39,7 @@ export function SpaceWeather({ data }: { data: UniverseData }) {
 
   return (
     <motion.div 
-      className="fixed bottom-[88px] md:bottom-24 left-4 right-4 z-[110] pointer-events-none mx-auto max-w-[320px] md:max-w-[400px]"
+      className="fixed bottom-[88px] md:bottom-24 right-4 z-[105] pointer-events-none w-[280px] md:w-[320px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1.2, duration: 0.8 }}

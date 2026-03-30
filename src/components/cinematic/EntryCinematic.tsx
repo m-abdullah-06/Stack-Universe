@@ -9,6 +9,7 @@ interface EntryCinematicProps {
   lightYears: number
   distanceLabel: string
   claimData?: any | null
+  isReady?: boolean
   onComplete: () => void
 }
 
@@ -27,6 +28,7 @@ export function EntryCinematic({
   lightYears,
   distanceLabel,
   claimData,
+  isReady = true,
   onComplete,
 }: EntryCinematicProps) {
   const [phase, setPhase] = useState<
@@ -58,17 +60,32 @@ export function EntryCinematic({
     }, 30)
 
     after(2800, () => setPhase('approach'))
-    after(4800, () => {
-      setPhase('done')
-      onComplete()
-    })
 
     return () => {
       t.forEach(clearTimeout)
       t.length = 0
       clearInterval(animInterval)
     }
-  }, [lightYears, onComplete])
+  }, [lightYears])
+
+  useEffect(() => {
+    if (phase === 'approach') {
+      const approachStartTime = Date.now()
+      
+      const checkDone = setInterval(() => {
+        // Guarantee at least 2500ms of screen time for the approach phase (where the message shows)
+        // AND ensure the API data fetch has actually finished
+        const timeSpent = Date.now() - approachStartTime
+        if (isReady && timeSpent >= 2500) {
+          clearInterval(checkDone)
+          setPhase('done')
+          onComplete()
+        }
+      }, 100)
+      
+      return () => clearInterval(checkDone)
+    }
+  }, [phase, isReady, onComplete])
 
   if (phase === 'done') return null
 

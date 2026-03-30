@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getLanguageColor } from '@/lib/language-colors'
 
 export const runtime = 'nodejs' 
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
@@ -24,10 +25,10 @@ export async function GET(
     const bio = claim?.bio || ''
     
     // Premium Dimensions
-    const width = 540
-    const height = 200
-    const centerX = 150
-    const centerY = 100
+    const width = 800
+    const height = 400
+    const centerX = 240
+    const centerY = 200
 
     let pinnedRepos = []
     if (claim?.pinned_repos?.length > 0) {
@@ -37,30 +38,63 @@ export async function GET(
           name,
           color: getLanguageColor(repo?.language || '')
         }
-      }).slice(0, 3)
+      }).slice(0, 5)
     } else {
-      pinnedRepos = data.repos.slice(0, 3).map(r => ({
+      pinnedRepos = data.repos.slice(0, 5).map(r => ({
         name: r.name,
         color: getLanguageColor(r.language || '')
       }))
     }
 
     const orbits = pinnedRepos.map((repo: any, i: number) => {
-      const rx = 52 + i * 22
-      const ry = rx * 0.5
-      const duration = 12 + i * 6
+      const rx = 80 + i * 35
+      const ry = rx * 0.45
+      const duration = 15 + i * 6
       const pathId = `orbit-${i}`
       const pathD = `M ${centerX + rx} ${centerY} a ${rx} ${ry} 0 1 1 0 -0.0001`
 
       return `
-        <path id="${pathId}" d="${pathD}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
-        <circle r="4.5" fill="${repo.color}" filter="url(#planetGlow)">
+        <path id="${pathId}" d="${pathD}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" stroke-dasharray="2 6" />
+        <circle r="6" fill="${repo.color}" filter="url(#planetGlow)">
           <animateMotion dur="${duration}s" repeatCount="indefinite">
             <mpath href="#${pathId}" />
           </animateMotion>
-          <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
         </circle>
       `
+    }).join('')
+
+    // Generate random background stars
+    const bgStars = Array.from({ length: 70 }).map(() => {
+      const x = Math.floor(Math.random() * width)
+      const y = Math.floor(Math.random() * height)
+      const r = Math.random() * 1.5 + 0.5
+      const dur = Math.random() * 3 + 2
+      const delay = Math.random() * 3
+      return `<circle cx="${x}" cy="${y}" r="${r}" fill="#ffffff" opacity="0.2">
+                <animate attributeName="opacity" values="0.1;0.8;0.1" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" />
+              </circle>`
+    }).join('')
+
+    // Language Spectrum Bar
+    const topLangs = data.languages.slice(0, 4)
+    const totalLangBytes = topLangs.reduce((sum: number, l: any) => sum + l.bytes, 0)
+    let currentX = 0
+    const langBars = topLangs.map((lang: any) => {
+      const barWidth = Math.max(0.02, lang.bytes / totalLangBytes) * 310
+      const rect = `<rect x="${currentX}" y="0" height="6" width="${barWidth}" fill="${lang.color}" />`
+      currentX += barWidth
+      return rect
+    }).join('')
+
+    let currentLabelX = 0
+    const langLabels = topLangs.map((lang: any) => {
+      const pct = Math.round((lang.bytes / totalLangBytes) * 100)
+      const output = `<g transform="translate(${currentLabelX}, 22)">
+        <circle cx="2" cy="-3" r="3" fill="${lang.color}" />
+        <text class="text-mono" x="8" y="0">${lang.name} ${pct}%</text>
+      </g>`
+      currentLabelX += 95 // better fixed spacing
+      return output
     }).join('')
 
     const svg = `
@@ -68,76 +102,134 @@ export async function GET(
   <style>
     .star { animation: pulse 4s ease-in-out infinite; transform-origin: ${centerX}px ${centerY}px; }
     @keyframes pulse {
-      0%, 100% { r: 15; opacity: 0.8; }
-      50% { r: 19; opacity: 1; }
+      0%, 100% { r: 24; opacity: 1; filter: url(#hyperGlow); }
+      50% { r: 28; opacity: 1; filter: url(#hyperGlowSubtle); }
     }
-    .text-main { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 900; fill: white; }
-    .text-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; fill: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.2em; }
-    .bio-text { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 9px; fill: rgba(255,255,255,0.35); font-style: italic; }
+    .text-title { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 900; font-size: 28px; fill: white; letter-spacing: -0.01em; }
+    .text-value { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 28px; fill: #ffffff; }
+    .text-mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; fill: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.15em; }
+    .bio-text { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; fill: rgba(255,255,255,0.6); font-style: italic; }
+    .neon-text { fill: #00e5ff; filter: drop-shadow(0 0 8px rgba(0,229,255,0.8)); }
   </style>
-  
-  <rect width="${width}" height="${height}" rx="16" fill="#000008" stroke="rgba(0,229,255,0.15)" stroke-width="1.5" />
-  
+
   <defs>
-    <radialGradient id="starGrad" cx="${centerX}" cy="${centerY}" r="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="${starColor}" stop-opacity="0.4" />
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="40%" cy="50%" r="70%" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#080a14" />
+      <stop offset="100%" stop-color="#020205" />
+    </radialGradient>
+    
+    <!-- Central Star Bloom -->
+    <radialGradient id="starBloom1" cx="${centerX}" cy="${centerY}" r="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="${starColor}" stop-opacity="0.25" />
       <stop offset="100%" stop-color="${starColor}" stop-opacity="0" />
     </radialGradient>
-    <filter id="starGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="6" result="blur" />
+    <radialGradient id="starBloom2" cx="${centerX}" cy="${centerY}" r="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="${starColor}" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="${starColor}" stop-opacity="0" />
+    </radialGradient>
+    
+    <!-- Filters -->
+    <filter id="hyperGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="hyperGlowSubtle" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
     <filter id="planetGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feGaussianBlur stdDeviation="3" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
-    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(0,229,255,0.04)" stroke-width="0.5"/>
-    </pattern>
+    <filter id="glassBlur">
+      <feGaussianBlur in="BackgroundImage" stdDeviation="10" />
+    </filter>
   </defs>
+
+  <!-- Base Grid & Background -->
+  <rect width="${width}" height="${height}" fill="url(#bgGrad)" rx="24" />
   
-  <rect width="${width}" height="${height}" fill="url(#grid)" rx="16" />
-  <circle cx="${centerX}" cy="${centerY}" r="50" fill="url(#starGrad)" />
+  <!-- Starfield -->
+  ${bgStars}
+
+  <!-- Massive Nebula Glow -->
+  <circle cx="200" cy="150" r="250" fill="rgba(0,229,255,0.025)" opacity="0.8" />
+  <circle cx="600" cy="250" r="300" fill="rgba(255,0,229,0.015)" opacity="0.8" />
+
+  <!-- The Star system -->
+  <circle cx="${centerX}" cy="${centerY}" r="180" fill="url(#starBloom1)" />
+  <circle cx="${centerX}" cy="${centerY}" r="80" fill="url(#starBloom2)" />
+  <circle cx="${centerX}" cy="${centerY}" r="24" fill="${starColor}" class="star" />
   
-  <!-- Central Star -->
-  <circle cx="${centerX}" cy="${centerY}" r="17" fill="${starColor}" class="star" filter="url(#starGlow)" />
-  <ellipse cx="${centerX}" cy="${centerY}" rx="35" ry="17.5" fill="none" stroke="${starColor}" stroke-width="0.5" stroke-dasharray="3 8" opacity="0.25" />
-  
-  <!-- Orbits & Planets -->
   ${orbits}
-  
-  <!-- Info Panel -->
-  <g transform="translate(300, 45)">
-    <text class="text-mono" y="0">Universe of</text>
-    <text class="text-main" y="28" font-size="24" letter-spacing="-0.02em">@${data.username.toUpperCase()}</text>
-    ${bio ? `<text class="bio-text" y="46">"${bio.length > 35 ? bio.slice(0, 32) + '...' : bio}"</text>` : ''}
+
+  <!-- Glass HUD Panel -->
+  <g transform="translate(420, 30)">
+    <!-- Right bounding HUD Backdrop -->
+    <rect x="-24" y="-10" width="370" height="340" fill="#0c101a" opacity="0.85" rx="16" stroke="rgba(0,229,255,0.2)" stroke-width="1.5" />
     
-    <g transform="translate(0, 68)">
+    <text class="text-mono" x="0" y="20">Explorer Identity</text>
+    <text class="text-title" x="0" y="55">@${data.username.toUpperCase()}</text>
+    ${bio ? `<text class="bio-text" x="0" y="80">"${bio.length > 50 ? bio.slice(0, 47) + '...' : bio}"</text>` : ''}
+    
+    <!-- Stats Grid -->
+    <g transform="translate(0, 115)">
+      <!-- Score -->
       <g>
-        <text class="text-mono" y="0">Universe Score</text>
-        <text class="text-main" y="24" font-size="20" fill="#00e5ff">${data.universeScore.toLocaleString()}</text>
+        <rect width="150" height="75" rx="12" fill="rgba(255,255,255,0.02)" stroke="rgba(0,229,255,0.2)" stroke-width="1" />
+        <text class="text-mono" x="16" y="26">Universe Score</text>
+        <text class="text-value neon-text" x="16" y="60">${data.universeScore.toLocaleString()}</text>
       </g>
-      <g transform="translate(130, 0)">
-        <text class="text-mono" y="0">Repositories</text>
-        <text class="text-main" y="24" font-size="20">${data.repos.length}</text>
+      <!-- Repos & Stars -->
+      <g transform="translate(165, 0)">
+        <rect width="150" height="75" rx="12" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+        <text class="text-mono" x="16" y="26">Repositories</text>
+        <text class="text-value" x="16" y="60">${data.repos.length}</text>
       </g>
     </g>
+
+    <!-- Total Stars & Account Age -->
+    <g transform="translate(0, 205)">
+      <rect width="150" height="40" rx="8" fill="rgba(255,255,255,0.015)" />
+      <text class="text-mono" x="16" y="24">Total Stars: <tspan fill="white" font-weight="bold">${data.totalStars}</tspan></text>
+    </g>
+    <g transform="translate(165, 205)">
+      <rect width="150" height="40" rx="8" fill="rgba(255,255,255,0.015)" />
+      <text class="text-mono" x="16" y="24">Code Age: <tspan fill="white" font-weight="bold">${data.accountAgeYears.toFixed(1)}y</tspan></text>
+    </g>
     
-    <g transform="translate(0, 115)">
-      <rect width="210" height="24" rx="6" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" />
-      <text class="text-mono" x="10" y="15" font-size="9" fill="rgba(0,229,255,0.7)">Distance: ${data.distanceLabel}</text>
+    <!-- Language Bar -->
+    <g transform="translate(0, 275)">
+      <text class="text-mono" y="0">Primary Composition</text>
+      <g transform="translate(0, 12)">
+         <!-- Clip path to round the combined bar -->
+         <clipPath id="barR"><rect width="310" height="6" rx="3" /></clipPath>
+         <g clip-path="url(#barR)">
+           ${langBars}
+         </g>
+         ${langLabels}
+      </g>
     </g>
   </g>
+
+  <!-- Live Status Dot -->
+  <g transform="translate(35, 360)">
+    <circle cx="0" cy="-4" r="4" fill="#00ff66">
+      <animate attributeName="opacity" values="0.2;1;0.2" dur="2s" repeatCount="indefinite" />
+    </circle>
+    <text class="text-mono" x="12" y="0" fill="#00ff66">[ SYSTEM_ACTIVE ]</text>
+  </g>
   
-  <!-- Corner Accents -->
-  <g stroke="rgba(0,229,255,0.25)" stroke-width="2">
-    <path d="M 16 16 L 32 16 M 16 16 L 16 32" />
-    <path d="M ${width-16} 16 L ${width-32} 16 M ${width-16} 16 L ${width-16} 32" />
-    <path d="M 16 ${height-16} L 32 ${height-16} M 16 ${height-16} L 16 ${height-32}" />
-    <path d="M ${width-16} ${height-16} L ${width-32} ${height-16} M ${width-16} ${height-16} L ${width-16} ${height-32}" />
+  <!-- Outer Corner Accents -->
+  <g stroke="rgba(255,255,255,0.15)" stroke-width="2" opacity="0.4">
+    <path d="M 32 32 L 48 32 M 32 32 L 32 48" />
+    <path d="M ${width-32} 32 L ${width-48} 32 M ${width-32} 32 L ${width-32} 48" />
+    <path d="M 32 ${height-32} L 48 ${height-32} M 32 ${height-32} L 32 ${height-48}" />
+    <path d="M ${width-32} ${height-32} L ${width-48} ${height-32} M ${width-32} ${height-32} L ${width-32} ${height-48}" />
   </g>
 </svg>
-    `
+`
 
     return new Response(svg, {
       headers: {

@@ -131,6 +131,7 @@ export interface UniverseData {
   repoActions:        Record<string, ActionRun[]>
   metrics_status:     'success' | 'failed'
   claim?:             ClaimData | null
+  sentiment:          number // -1 to 1 based on recent commits
 }
 
 export interface StoredUniverse {

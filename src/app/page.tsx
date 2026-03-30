@@ -165,17 +165,18 @@ export default function Home() {
       {/* ── Foreground UI Layer ── */}
       <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
         {/* ── Header ── */}
-        <header className="flex-shrink-0 w-full px-4 md:px-8 py-4 flex justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-xl pointer-events-auto">
-          <div className="flex items-center gap-3">
-            <h1 className="font-orbitron font-black text-base md:text-xl text-white tracking-widest">
+        <header className="flex-shrink-0 w-full px-4 md:px-8 py-3 md:py-4 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-xl pointer-events-auto">
+          <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-center sm:justify-start">
+            <h1 className="font-orbitron font-black text-lg md:text-xl text-white tracking-widest">
               STACK<span className="text-space-cyan">UNIVERSE</span>
             </h1>
             <span className="font-mono text-[7px] md:text-[8px] text-gray-600 tracking-[0.2em] uppercase hidden sm:inline">
               v1.0.4
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-2 md:gap-3 w-full sm:w-auto">
             <AmbientAudio />
+            <LoginButton />
           </div>
         </header>
 
@@ -268,10 +269,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Login Entry (Bottom Left) ── */}
-      <div className="fixed bottom-6 left-6 z-[100] hidden md:block">
-        <LoginButton />
-      </div>
 
       {/* ── System Manual (Desktop only) ── */}
       <SystemManual />

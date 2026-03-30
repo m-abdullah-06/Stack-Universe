@@ -140,7 +140,7 @@ function EmissionNebula({ color, rand }: { color: string; rand: () => number }) 
         size={4}
         sizeAttenuation
         transparent
-        opacity={0.3}
+        opacity={0.1}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -174,7 +174,7 @@ function DarkNebula({ rand }: { rand: () => number }) {
           size={35}
           sizeAttenuation
           transparent
-          opacity={0.08} // Subtler void
+          opacity={0.04} // Subtler void
           depthWrite={false}
         />
       </points>
@@ -188,7 +188,7 @@ function DarkNebula({ rand }: { rand: () => number }) {
           size={8}
           sizeAttenuation
           transparent
-          opacity={0.12}
+          opacity={0.06}
           depthWrite={false}
         />
       </points>
@@ -231,7 +231,7 @@ function ReflectionNebula({ colors, rand }: { colors: string[]; rand: () => numb
             size={20 + i * 10}
             sizeAttenuation
             transparent
-            opacity={0.03}
+            opacity={0.015}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />
@@ -248,7 +248,7 @@ function PlanetaryNebula({ color, rand }: { color: string; rand: () => number })
   
   const rings = useMemo(() => Array.from({ length: 4 }, (_, i) => ({
     pos: makeRingField(800 + i * 200, rand, 80 + i * 40, 6 + i * 2),
-    opacity: 0.03 - i * 0.005,
+    opacity: Math.max(0.005, 0.015 - i * 0.003),
     speed: 0.002 - i * 0.0002,
     tilt: (rand() - 0.5) * 0.4,
   })), [rand])
@@ -295,7 +295,7 @@ function PlanetaryNebula({ color, rand }: { color: string; rand: () => number })
           size={15}
           sizeAttenuation
           transparent
-          opacity={0.015}
+          opacity={0.008}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
@@ -344,7 +344,7 @@ function ProtostellarNebula({ color, rand }: { color: string; rand: () => number
         size={12}
         sizeAttenuation
         transparent
-        opacity={0.02}
+        opacity={0.01}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -360,7 +360,7 @@ function SupernovaRemnant({ color, rand }: { color: string; rand: () => number }
 
   const rings = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
     pos: makeRingField(1200 + i * 300, rand, 70 + i * 30, 8 + i * 2),
-    opacity: 0.04 - i * 0.005,
+    opacity: Math.max(0.005, 0.02 - i * 0.003),
     speed: 0.008 + i * 0.002,
     axis: new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize(),
   })), [rand])
@@ -407,7 +407,7 @@ function SupernovaRemnant({ color, rand }: { color: string; rand: () => number }
           size={10}
           sizeAttenuation
           transparent
-          opacity={0.02}
+          opacity={0.01}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
@@ -437,7 +437,7 @@ function StandardNebula({ color, rand }: { color: string; rand: () => number }) 
         size={3}
         sizeAttenuation
         transparent
-        opacity={0.15}
+        opacity={0.05}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -508,18 +508,42 @@ interface NebulaProps {
   spread: number
   density: number
   extraColors: string[]
+  sentiment?: number
 }
 
 export function Nebula({ 
   username, 
   primaryColor, 
   nebulaType, 
-  spread, 
+  spread,
   density, 
-  extraColors 
+  extraColors,
+  sentiment = 0
 }: NebulaProps) {
   const seed = usernameHash(username)
   const rand = useMemo(() => seededRandom(seed), [seed])
+
+  // --- Sentiment-based Color Shift ---
+  const adjustedPrimary = useMemo(() => {
+    const base = new THREE.Color(primaryColor)
+    if (sentiment > 0.3) {
+      // Shift toward Cyan/Teal
+      return base.lerp(new THREE.Color('#00ffff'), 0.4).getStyle()
+    } else if (sentiment < -0.2) {
+      // Shift toward Red/Deep Purple
+      return base.lerp(new THREE.Color('#ff0055'), 0.5).getStyle()
+    }
+    return primaryColor
+  }, [primaryColor, sentiment])
+
+  const adjustedExtras = useMemo(() => {
+    return extraColors.map(c => {
+      const base = new THREE.Color(c)
+      if (sentiment > 0.3) return base.lerp(new THREE.Color('#00ffaa'), 0.3).getStyle()
+      if (sentiment < -0.2) return base.lerp(new THREE.Color('#aa00ff'), 0.4).getStyle()
+      return c
+    })
+  }, [extraColors, sentiment])
 
   // Scale and density are now controlled by spread and density props
   const sizeMultiplier = spread / 40 // Normalize spread to scale
@@ -533,19 +557,19 @@ export function Nebula({
       {(() => {
         switch (nebulaType) {
           case 'emission':
-            return <EmissionNebula color={primaryColor} rand={rand} />
+            return <EmissionNebula color={adjustedPrimary} rand={rand} />
           case 'dark':
             return <DarkNebula rand={rand} />
           case 'reflection':
-            return <ReflectionNebula colors={extraColors} rand={rand} />
+            return <ReflectionNebula colors={adjustedExtras} rand={rand} />
           case 'planetary':
-            return <PlanetaryNebula color={primaryColor} rand={rand} />
+            return <PlanetaryNebula color={adjustedPrimary} rand={rand} />
           case 'protostellar':
-            return <ProtostellarNebula color={primaryColor} rand={rand} />
+            return <ProtostellarNebula color={adjustedPrimary} rand={rand} />
           case 'supernova':
-            return <SupernovaRemnant color={primaryColor} rand={rand} />
+            return <SupernovaRemnant color={adjustedPrimary} rand={rand} />
           default:
-            return <StandardNebula color={primaryColor} rand={rand} />
+            return <StandardNebula color={adjustedPrimary} rand={rand} />
         }
       })()}
     </group>

@@ -250,14 +250,14 @@ export function ShareCard({ data }: ShareCardProps) {
                 <p className="font-orbitron font-bold text-[10px] text-space-gold tracking-widest uppercase">
                   GitHub README (Animated)
                 </p>
-                <span className="font-mono text-[8px] text-gray-600">540 x 200</span>
+                <span className="font-mono text-[8px] text-gray-600">1000 x 360</span>
               </div>
               <div className="relative group mb-4">
                 <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                  {`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()}?v=1)](${shareUrl})`}
+                  {`[![Stack Universe](${appUrl}/api/embed-v2/${data.username.toLowerCase()}?v=1)](${shareUrl})`}
                 </pre>
                 <button
-                  onClick={() => copyToClipboard(`[![Stack Universe](${appUrl}/api/embed/${data.username.toLowerCase()}?v=1)](${shareUrl})`, 'markdown')}
+                  onClick={() => copyToClipboard(`[![Stack Universe](${appUrl}/api/embed-v2/${data.username.toLowerCase()}?v=1)](${shareUrl})`, 'markdown')}
                   className="absolute top-2 right-2 bg-space-gold/10 hover:bg-space-gold/20 text-space-gold border border-space-gold/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
                 >
                   {markdownCopied ? "✓" : "COPY"}

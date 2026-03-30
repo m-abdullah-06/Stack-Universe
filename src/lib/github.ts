@@ -316,6 +316,25 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
   const universeScore = calculateUniverseScore(totalStars, repos.length, languages.length, accountAgeYears)
   const { lightYears, distanceLabel } = calculateDistance(universeScore)
 
+  // --- Sentiment Analysis (Heuristic-based) ---
+  const calculateSentiment = (commits: CommitData[]) => {
+    if (commits.length === 0) return 0
+    const pos = ['fix', 'feat', 'improve', 'add', 'update', 'feature', 'resolve', 'perfect', 'great', 'clean', 'refactor', 'optimize', 'docs', 'chore']
+    const neg = ['bug', 'error', 'fail', 'broke', 'revert', 'issue', 'emergency', 'crash', 'hack', 'temporary', 'warning']
+    
+    let total = 0
+    commits.forEach(c => {
+      const msg = c.message.toLowerCase()
+      let score = 0
+      pos.forEach(w => { if (msg.includes(w)) score += 0.2 })
+      neg.forEach(w => { if (msg.includes(w)) score -= 0.3 })
+      total += Math.max(-1, Math.min(1, score))
+    })
+    return total / commits.length
+  }
+
+  const sentiment = calculateSentiment(recentCommits)
+
   return {
     username,
     user,
@@ -334,5 +353,6 @@ export async function fetchUniverseData(username: string): Promise<UniverseData>
     openPRs,
     repoActions,
     metrics_status: Object.keys(healthMetrics).length > 0 ? 'success' : 'failed',
+    sentiment,
   }
 }

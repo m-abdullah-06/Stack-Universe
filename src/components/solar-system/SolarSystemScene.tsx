@@ -814,6 +814,17 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
           {/* Pure minimal background stars */}
           <BackgroundStars perfLevel={perfLevel} />
           
+          {/* Nebula environment */}
+          <Nebula 
+            username={data.username}
+            primaryColor={primaryColor}
+            nebulaType={nebulaType}
+            spread={nebulaSpread}
+            density={nebulaDensity}
+            extraColors={extraColors}
+            sentiment={data.sentiment}
+          />
+          
           {/* Subtle accent light for the 'system' center */}
           <pointLight position={[0, 0, 0]} intensity={1.5} color={primaryColor} distance={150} decay={2} />
 
@@ -832,7 +843,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
               setSelectedRepo(null)
             }}
           />
-          <CentralBio data={data} />
+          {/* Bio moved to HUD panel only */}
 
           {/* REPOS MODE — full system */}
           {viewMode === 'repos' && !isEmpty && (
