@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useUniverseStore } from '@/store'
+import { useUniverseStore, useIsAnyPanelOpen } from '@/store'
 import type { UniverseData } from '@/types'
 
 const STAR_COLORS = [
@@ -19,9 +19,9 @@ interface CustomisePanelProps {
 }
 
 export function CustomisePanel({ data }: CustomisePanelProps) {
-  const { claimData, setClaimData } = useUniverseStore()
-  const [isOpen, setIsOpen] = useState(false)
+  const { claimData, setClaimData, showCustomisePanel, setShowCustomisePanel } = useUniverseStore()
   const [isSaving, setIsSaving] = useState(false)
+  const isAnyPanelOpen = useIsAnyPanelOpen()
 
   if (!claimData) return null
 
@@ -44,20 +44,9 @@ export function CustomisePanel({ data }: CustomisePanelProps) {
   }
 
   return (
-    <>
-      {/* Trigger Button */}
-      <motion.button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 md:bottom-6 right-4 md:right-24 z-[100] bg-black/60 backdrop-blur-xl border border-white/10 px-5 py-2.5 rounded-full font-mono text-[10px] tracking-widest text-space-cyan hover:text-white transition-all shadow-[0_0_20px_rgba(0,229,255,0.1)]"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        [ CUSTOMISE ]
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
+    <AnimatePresence>
+      {showCustomisePanel && (
+        <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -66,7 +55,7 @@ export function CustomisePanel({ data }: CustomisePanelProps) {
           >
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-orbitron font-bold text-lg text-white tracking-widest">CUSTOMISE</h3>
-              <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-white">✕</button>
+              <button onClick={() => setShowCustomisePanel(false)} className="text-gray-500 hover:text-white">✕</button>
             </div>
 
             <div className="space-y-8">
@@ -160,8 +149,7 @@ export function CustomisePanel({ data }: CustomisePanelProps) {
               </div>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+      )}
+    </AnimatePresence>
   )
 }

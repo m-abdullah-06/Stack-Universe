@@ -1,24 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;600;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-bg: #000008;
-  --color-deep: #00000f;
+  --color-bg: #020205;
+  --color-deep: #05050f;
   --color-cyan: #00e5ff;
-  --color-cyan-dim: #00e5ff33;
+  --color-cyan-dim: rgba(0, 229, 255, 0.15);
   --color-magenta: #ff006e;
-  --color-magenta-dim: #ff006e33;
+  --color-magenta-dim: rgba(255, 0, 110, 0.15);
   --color-gold: #ffd700;
   --color-purple: #7b2fff;
   --color-dim: #0a0a1a;
   --color-text: #e0f4ff;
   --color-text-dim: #4a6a7a;
-  --glow-cyan: 0 0 10px #00e5ff80, 0 0 20px #00e5ff40, 0 0 40px #00e5ff20;
-  --glow-magenta: 0 0 10px #ff006e80, 0 0 20px #ff006e40;
-  --glow-gold: 0 0 10px #ffd70080, 0 0 20px #ffd70040;
+  --glow-cyan: 0 0 15px rgba(0, 229, 255, 0.4), 0 0 30px rgba(0, 229, 255, 0.2);
+  --glow-magenta: 0 0 15px rgba(255, 0, 110, 0.4), 0 0 30px rgba(255, 0, 110, 0.2);
 }
 
 * {
@@ -131,16 +130,40 @@ button, a, [role="button"] {
   background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
 }
 
+/* Luxe Glassmorphism V2 */
+.luxe-glass {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(0, 0, 15, 0.95) 100%
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 15px 40px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+}
+
+.luxe-glass-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    inset 0 0 15px rgba(255, 255, 255, 0.02);
+}
+
 /* Corner decoration for HUD panels */
 .hud-corner::after {
   content: '';
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 12px;
-  height: 12px;
-  border-bottom: 1px solid var(--color-cyan);
-  border-right: 1px solid var(--color-cyan);
+  width: 14px;
+  height: 14px;
+  border-bottom: 2px solid var(--color-cyan);
+  border-right: 2px solid var(--color-cyan);
+  opacity: 0.5;
 }
 
 /* Cinematic text effect */

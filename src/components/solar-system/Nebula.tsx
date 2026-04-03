@@ -2,7 +2,9 @@
 
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { Billboard } from '@react-three/drei'
 import * as THREE from 'three'
+import { NebulaShaderMaterial } from './NebulaShaderMaterial'
 import type { UniverseData } from '@/types'
 
 // ─── nebula type detection ────────────────────────────────────────────────────
@@ -119,123 +121,83 @@ function makeRingField(count: number, rand: () => number, radius: number, thickn
   return arr
 }
 
-// ─── EMISSION NEBULA (Technical Rays) ─────────────────────────────────────────
-function EmissionNebula({ color, rand }: { color: string; rand: () => number }) {
-  const hazeRef  = useRef<THREE.Points>(null)
-  const texture  = useMemo(() => createTechPointTexture(), [])
-  const hazePos  = useMemo(() => makeParticleField(800, rand, 80, 240, 0.05), [rand])
-
-  useFrame((state) => {
-    if (hazeRef.current) hazeRef.current.rotation.y = state.clock.getElapsedTime() * 0.005
+// ─── CLOUD COMPONENT (The new Wow) ──────────────────────────────────────────
+function NebulaCloud({ position, color, opacity = 0.1, scale = 20 }: { position: [number, number, number]; color: string; opacity?: number; scale?: number }) {
+  const ref = useRef<any>(null)
+  useFrame((state: any) => {
+    if (ref.current) ref.current.uTime = state.clock.getElapsedTime()
   })
-
   return (
-    <points ref={hazeRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[hazePos, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        map={texture}
-        color={color}
-        size={4}
-        sizeAttenuation
-        transparent
-        opacity={0.1}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
-    </points>
+    <Billboard position={position}>
+      <mesh>
+        <planeGeometry args={[scale, scale]} />
+        <nebulaShaderMaterial
+          ref={ref}
+          uColor={new THREE.Color(color)}
+          uOpacity={opacity}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+    </Billboard>
   )
 }
 
-// ─── DARK NEBULA ─────────────────────────────────────────────────────────────
-function DarkNebula({ rand }: { rand: () => number }) {
-  const ref = useRef<THREE.Points>(null)
-  const dustRef = useRef<THREE.Points>(null)
-  const hazePos = useMemo(() => makeParticleField(1500, rand, 70, 160, 0.2), [rand])
-  const dustPos = useMemo(() => makeParticleField(800, rand, 40, 100, 0.5), [rand])
-  const texture = useMemo(() => createTechPointTexture(), [])
-
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime()
-    if (ref.current) ref.current.rotation.y = t * 0.002
-    if (dustRef.current) dustRef.current.rotation.y = -t * 0.004
-  })
+// Re-using the point fields as anchor points for clouds
+function CloudField({ 
+  positions, 
+  color, 
+  opacity, 
+  cloudScale 
+}: { 
+  positions: Float32Array; 
+  color: string; 
+  opacity: number; 
+  cloudScale: number 
+}) {
+  const clouds = useMemo(() => {
+    const list = []
+    // Take every 10th-50th point to avoid thousands of billboard meshes (performance first!)
+    const step = Math.max(30, Math.floor(positions.length / 300)) 
+    for (let i = 0; i < positions.length; i += step * 3) {
+      list.push([positions[i], positions[i+1], positions[i+2]] as [number, number, number])
+    }
+    return list
+  }, [positions])
 
   return (
     <group>
-      <points ref={ref}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[hazePos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color="#00000a"
-          size={35}
-          sizeAttenuation
-          transparent
-          opacity={0.04} // Subtler void
-          depthWrite={false}
-        />
-      </points>
-      <points ref={dustRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[dustPos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color="#000005"
-          size={8}
-          sizeAttenuation
-          transparent
-          opacity={0.06}
-          depthWrite={false}
-        />
-      </points>
+      {clouds.map((pos, i) => (
+        <NebulaCloud key={i} position={pos} color={color} opacity={opacity} scale={cloudScale} />
+      ))}
     </group>
   )
 }
 
+// ─── EMISSION NEBULA ─────────────────────────────────────────────────────────
+function EmissionNebula({ color, rand }: { color: string; rand: () => number }) {
+  const hazePos  = useMemo(() => makeParticleField(1200, rand, 80, 240, 0.05), [rand])
+  return <CloudField positions={hazePos} color={color} opacity={0.05} cloudScale={60} />
+}
+
+// ─── DARK NEBULA ─────────────────────────────────────────────────────────────
+function DarkNebula({ rand }: { rand: () => number }) {
+  const hazePos = useMemo(() => makeParticleField(2000, rand, 70, 160, 0.2), [rand])
+  return <CloudField positions={hazePos} color="#00000a" opacity={0.08} cloudScale={80} />
+}
+
 // ─── REFLECTION NEBULA ───────────────────────────────────────────────────────
 function ReflectionNebula({ colors, rand }: { colors: string[]; rand: () => number }) {
-  const refs   = useRef<THREE.Points[]>([])
-  const texture = useMemo(() => createTechPointTexture(), [])
-  
   const layers = useMemo(() => colors.slice(0, 5).map((col, ci) => ({
     col,
-    pos: makeParticleField(500, rand, 60 + ci * 25, 120 + ci * 30, 0.3),
-    speed: 0.002 + ci * 0.001,
-    dir: ci % 2 === 0 ? 1 : -1,
+    pos: makeParticleField(600, rand, 60 + ci * 25, 120 + ci * 30, 0.3),
   })), [colors, rand])
-
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime()
-    layers.forEach((l, i) => {
-      if (refs.current[i]) {
-        refs.current[i].rotation.y = t * l.speed * l.dir
-        refs.current[i].rotation.z = Math.sin(t * 0.03 + i) * 0.05
-      }
-    })
-  })
 
   return (
     <group>
       {layers.map((l, i) => (
-        <points key={i} ref={el => { if (el) refs.current[i] = el }}>
-          <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[l.pos, 3]} />
-          </bufferGeometry>
-          <pointsMaterial
-            map={texture}
-            color={l.col}
-            size={20 + i * 10}
-            sizeAttenuation
-            transparent
-            opacity={0.015}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </points>
+        <CloudField key={i} positions={l.pos} color={l.col} opacity={0.03} cloudScale={70 + i * 10} />
       ))}
     </group>
   )
@@ -243,206 +205,40 @@ function ReflectionNebula({ colors, rand }: { colors: string[]; rand: () => numb
 
 // ─── PLANETARY NEBULA ────────────────────────────────────────────────────────
 function PlanetaryNebula({ color, rand }: { color: string; rand: () => number }) {
-  const ringRefs = useRef<THREE.Points[]>([])
-  const texture  = useMemo(() => createTechPointTexture(), [])
-  
-  const rings = useMemo(() => Array.from({ length: 4 }, (_, i) => ({
-    pos: makeRingField(800 + i * 200, rand, 80 + i * 40, 6 + i * 2),
-    opacity: Math.max(0.005, 0.015 - i * 0.003),
-    speed: 0.002 - i * 0.0002,
-    tilt: (rand() - 0.5) * 0.4,
-  })), [rand])
-
+  const ringPos = useMemo(() => makeRingField(1500, rand, 120, 10), [rand])
   const dustPos = useMemo(() => makeParticleField(1000, rand, 50, 160, 0.3), [rand])
-
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime()
-    rings.forEach((ring, i) => {
-      if (ringRefs.current[i]) {
-        ringRefs.current[i].rotation.z = t * ring.speed
-        ringRefs.current[i].rotation.x = Math.PI / 2 + ring.tilt + Math.sin(t * 0.02 + i) * 0.05
-      }
-    })
-  })
-
   return (
     <group>
-      {/* Dusty Particle Rings instead of hula hoops */}
-      {rings.map((ring, i) => (
-        <points key={i} ref={el => { if (el) ringRefs.current[i] = el }}>
-          <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[ring.pos, 3]} />
-          </bufferGeometry>
-          <pointsMaterial
-            map={texture}
-            color={color}
-            size={12}
-            sizeAttenuation
-            transparent
-            opacity={ring.opacity}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </points>
-      ))}
-      <points>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[dustPos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color={color}
-          size={15}
-          sizeAttenuation
-          transparent
-          opacity={0.008}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
+      <CloudField positions={ringPos} color={color} opacity={0.06} cloudScale={40} />
+      <CloudField positions={dustPos} color={color} opacity={0.02} cloudScale={100} />
     </group>
   )
 }
 
 // ─── PROTOSTELLAR NEBULA ─────────────────────────────────────────────────────
 function ProtostellarNebula({ color, rand }: { color: string; rand: () => number }) {
-  const ref = useRef<THREE.Points>(null)
-  const texture = useMemo(() => createTechPointTexture(), [])
-
-  // Push spiral much further out
-  const pos = useMemo(() => {
-    const count = 2000
+  const spiralPos = useMemo(() => {
+    const count = 1500
     const arr   = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
-      const t     = rand()
-      const r     = 60 + t * 140 
-      const angle = t * Math.PI * 10 + rand() * 0.6
-      const y     = (rand() - 0.5) * r * 0.15
-      arr[i * 3]     = Math.cos(angle) * r
-      arr[i * 3 + 1] = y
-      arr[i * 3 + 2] = Math.sin(angle) * r
+      const t = rand(); const r = 60 + t * 140; const angle = t * Math.PI * 10 + rand() * 0.6
+      arr[i * 3] = Math.cos(angle) * r; arr[i * 3+1] = 0; arr[i * 3+2] = Math.sin(angle) * r
     }
     return arr
   }, [rand])
-
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime()
-    if (ref.current) {
-      ref.current.rotation.y = -t * 0.008
-      ref.current.scale.setScalar(1 + Math.sin(t * 0.1) * 0.01)
-    }
-  })
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[pos, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        map={texture}
-        color={color}
-        size={12}
-        sizeAttenuation
-        transparent
-        opacity={0.01}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
-    </points>
-  )
+  return <CloudField positions={spiralPos} color={color} opacity={0.04} cloudScale={50} />
 }
 
 // ─── SUPERNOVA REMNANT ───────────────────────────────────────────────────────
 function SupernovaRemnant({ color, rand }: { color: string; rand: () => number }) {
-  const ringRefs = useRef<THREE.Points[]>([])
-  const shards    = useRef<THREE.Points>(null)
-  const texture   = useMemo(() => createTechPointTexture(), [])
-
-  const rings = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
-    pos: makeRingField(1200 + i * 300, rand, 70 + i * 30, 8 + i * 2),
-    opacity: Math.max(0.005, 0.02 - i * 0.003),
-    speed: 0.008 + i * 0.002,
-    axis: new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize(),
-  })), [rand])
-
-  const shardPos = useMemo(() => makeParticleField(1500, rand, 60, 200, 0.3), [rand])
-
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime()
-    rings.forEach((ring, i) => {
-      if (ringRefs.current[i]) {
-        ringRefs.current[i].rotateOnAxis(ring.axis, ring.speed * 0.01)
-        ringRefs.current[i].scale.setScalar(1 + Math.sin(t * 0.05 + i) * 0.03)
-      }
-    })
-    if (shards.current) shards.current.rotation.y = t * 0.002
-  })
-
-  return (
-    <group>
-      {rings.map((ring, i) => (
-        <points key={i} ref={el => { if (el) ringRefs.current[i] = el }}>
-          <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[ring.pos, 3]} />
-          </bufferGeometry>
-          <pointsMaterial
-            map={texture}
-            color={i % 2 === 0 ? color : '#ffffff'}
-            size={10}
-            sizeAttenuation
-            transparent
-            opacity={ring.opacity}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </points>
-      ))}
-      <points ref={shards}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[shardPos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={texture}
-          color={color}
-          size={10}
-          sizeAttenuation
-          transparent
-          opacity={0.01}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-    </group>
-  )
+  const blastPos = useMemo(() => makeParticleField(2500, rand, 60, 240, 0.4), [rand])
+  return <CloudField positions={blastPos} color={color} opacity={0.04} cloudScale={90} />
 }
 
 // ─── STANDARD NEBULA ─────────────────────────────────────────────────────────
 function StandardNebula({ color, rand }: { color: string; rand: () => number }) {
-  const hazeRef = useRef<THREE.Points>(null)
-  const hazePos = useMemo(() => makeParticleField(500, rand, 80, 200, 0.1), [rand])
-  const texture = useMemo(() => createTechPointTexture(), [])
-
-  useFrame((state) => {
-    if (hazeRef.current) hazeRef.current.rotation.y = state.clock.getElapsedTime() * 0.002
-  })
-
-  return (
-    <points ref={hazeRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[hazePos, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        map={texture}
-        color={color}
-        size={3}
-        sizeAttenuation
-        transparent
-        opacity={0.05}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
-    </points>
-  )
+  const hazePos = useMemo(() => makeParticleField(800, rand, 80, 200, 0.1), [rand])
+  return <CloudField positions={hazePos} color={color} opacity={0.05} cloudScale={70} />
 }
 
 // ─── PHANTOM PLANETS (for users with < 5 repos) ───────────────────────────────
@@ -451,7 +247,7 @@ export function PhantomPlanets() {
   const angleRef       = useRef(0)
   const groupRef       = useRef<THREE.Group>(null)
 
-  useFrame((_, dt) => {
+  useFrame((state: any, dt: any) => {
     angleRef.current += dt * 0.08
     if (groupRef.current) groupRef.current.rotation.y = angleRef.current * 0.02
   })

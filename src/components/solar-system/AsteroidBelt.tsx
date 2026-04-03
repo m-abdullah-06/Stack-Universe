@@ -4,6 +4,7 @@ import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { GitHubRepo } from '@/types'
+import { AsteroidMaterial } from './AsteroidMaterial'
 
 // Category colours
 const CAT_COLORS = {
@@ -33,29 +34,26 @@ export function AsteroidBelt({ repos, innerRadius, outerRadius }: AsteroidBeltPr
   // Min 120 asteroids even for users with few repos
   const baseCount = Math.max(120, Math.min(repos.length * 4, 400))
 
-  // Build per-asteroid data: [radius, angSpeed, yOff, r, g, b]
-  const { meta, angles, positions, colors } = useMemo(() => {
-    const meta    = new Float32Array(baseCount * 3)  // radius, angSpeed, yOff
-    const angles  = new Float32Array(baseCount)
-    const positions = new Float32Array(baseCount * 3)
+  // Build per-asteroid data for GPU
+  const { radii, speeds, offsets, ys, colors } = useMemo(() => {
+    const radii   = new Float32Array(baseCount)
+    const speeds  = new Float32Array(baseCount)
+    const offsets = new Float32Array(baseCount)
+    const ys      = new Float32Array(baseCount)
     const colors  = new Float32Array(baseCount * 3)
 
     for (let i = 0; i < baseCount; i++) {
       const r   = innerRadius + Math.random() * (outerRadius - innerRadius)
       const spd = (Math.random() * 0.014 + 0.003) * (Math.random() > 0.5 ? 1 : -1)
-      const yOff = (Math.random() - 0.5) * 1.1
+      const yOff = (Math.random() - 0.5) * 1.5
       const ang  = Math.random() * Math.PI * 2
 
-      meta[i * 3]     = r
-      meta[i * 3 + 1] = spd
-      meta[i * 3 + 2] = yOff
-      angles[i]        = ang
+      radii[i]   = r
+      speeds[i]  = spd
+      offsets[i] = ang
+      ys[i]      = yOff
 
-      positions[i * 3]     = Math.cos(ang) * r
-      positions[i * 3 + 1] = yOff
-      positions[i * 3 + 2] = Math.sin(ang) * r
-
-      // Assign a category based on a repo if available, else cycle defaults
+      // Assign a category
       let col: THREE.Color
       if (repos.length > 0) {
         const repo = repos[i % repos.length]
@@ -68,35 +66,33 @@ export function AsteroidBelt({ repos, innerRadius, outerRadius }: AsteroidBeltPr
       colors[i * 3 + 1] = col.g
       colors[i * 3 + 2] = col.b
     }
-    return { meta, angles, positions, colors }
+    return { radii, speeds, offsets, ys, colors }
   }, [baseCount, innerRadius, outerRadius, repos])
 
-  useFrame((_, delta) => {
-    if (!meshRef.current) return
-    const posAttr = meshRef.current.geometry.attributes.position
-    const arr = posAttr.array as Float32Array
-    for (let i = 0; i < baseCount; i++) {
-      angles[i] += meta[i * 3 + 1] * delta
-      const r = meta[i * 3]
-      arr[i * 3]     = Math.cos(angles[i]) * r
-      arr[i * 3 + 1] = meta[i * 3 + 2]
-      arr[i * 3 + 2] = Math.sin(angles[i]) * r
+  useFrame((state) => {
+    if (meshRef.current?.material) {
+      (meshRef.current.material as any).uTime = state.clock.elapsedTime
     }
-    posAttr.needsUpdate = true
   })
 
   return (
     <points ref={meshRef}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        {/* We still need an initial position array for three.js points, but shader will override it */}
+        <bufferAttribute attach="attributes-position" args={[new Float32Array(baseCount * 3), 3]} />
         <bufferAttribute attach="attributes-color"    args={[colors, 3]} />
+        <bufferAttribute attach="attributes-aRadius"   args={[radii, 1]} />
+        <bufferAttribute attach="attributes-aSpeed"    args={[speeds, 1]} />
+        <bufferAttribute attach="attributes-aOffset"   args={[offsets, 1]} />
+        <bufferAttribute attach="attributes-aY"        args={[ys, 1]} />
       </bufferGeometry>
-      <pointsMaterial
-        size={0.12}
-        vertexColors
-        sizeAttenuation
+      <asteroidMaterial 
+        key={radii.length}
+        uOpacity={0.6}
+        uSize={0.15}
         transparent
-        opacity={0.75}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
       />
     </points>
   )

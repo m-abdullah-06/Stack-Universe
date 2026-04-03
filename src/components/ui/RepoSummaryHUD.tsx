@@ -1,17 +1,18 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useUniverseStore } from '@/store'
+import { useUniverseStore, useIsAnyPanelOpen } from '@/store'
 import { getLanguageColor } from '@/lib/language-colors'
 
 export function RepoSummaryHUD() {
-  const { hoveredRepo, hoveredRepoSummary } = useUniverseStore()
+  const { hoveredRepo, hoveredRepoSummary, viewMode } = useUniverseStore()
+  const isAnyPanelOpen = useIsAnyPanelOpen()
 
   return (
     <AnimatePresence>
-      {hoveredRepo && (
+      {hoveredRepo && (!isAnyPanelOpen || typeof window !== 'undefined' && window.innerWidth >= 768) && (
         <motion.div
-          className="fixed bottom-20 md:bottom-28 left-4 right-4 md:left-1/2 md:-translate-x-1/2 z-[110] md:w-[400px] pointer-events-none"
+          className="fixed bottom-32 md:bottom-28 left-4 right-4 md:left-1/2 md:-translate-x-1/2 z-[110] w-[min(400px,90vw)] md:w-[400px] pointer-events-none"
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -26,7 +27,7 @@ export function RepoSummaryHUD() {
               }} 
             />
             
-            <div className="p-5 flex flex-col items-center text-center">
+            <div className="p-4 md:p-5 flex flex-col items-center text-center">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-mono text-[9px] text-gray-500 uppercase tracking-[0.3em]">System Scan</span>
                 <div className="w-1 h-1 rounded-full bg-space-cyan animate-pulse" />

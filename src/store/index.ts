@@ -54,6 +54,9 @@ interface UniverseStore {
   setShowIdentityPanel: (v: boolean) => void
   identityObservations: string[]
   setIdentityObservations: (obs: string[]) => void
+
+  showCustomisePanel: boolean
+  setShowCustomisePanel: (v: boolean) => void
 }
 
 export const useUniverseStore = create<UniverseStore>((set) => ({
@@ -108,5 +111,20 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   showIdentityPanel: false,
   setShowIdentityPanel: (v: boolean) => set({ showIdentityPanel: v }),
   identityObservations: [],
-  setIdentityObservations: (obs: string[]) => set({ identityObservations: obs }),
+  setIdentityObservations: (obs) => set({ identityObservations: obs }),
+
+  showCustomisePanel: false,
+  setShowCustomisePanel: (v) => set({ showCustomisePanel: v }),
 }))
+
+export const useIsAnyPanelOpen = () => {
+  return useUniverseStore((s) => 
+    s.showHallOfGiants || 
+    s.showShareCard || 
+    s.showNarrator || 
+    s.showRoast || 
+    s.showHoroscope || 
+    s.showIdentityPanel ||
+    s.showCustomisePanel
+  )
+}

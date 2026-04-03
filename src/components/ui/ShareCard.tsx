@@ -17,6 +17,7 @@ export function ShareCard({ data }: ShareCardProps) {
   const [embedCopied, setEmbedCopied] = useState(false);
   const [markdownCopied, setMarkdownCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [showEmbeds, setShowEmbeds] = useState(false);
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://stack-universe.vercel.app";
@@ -71,15 +72,17 @@ export function ShareCard({ data }: ShareCardProps) {
         onClick={() => setShowShareCard(false)}
       >
         <motion.div
-          className="flex flex-col items-center gap-4"
+          className="flex flex-col items-center gap-3 w-full max-w-sm px-4 md:px-0 max-h-[80vh]"
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* The card */}
-          <div
-            ref={cardRef}
-            className="w-96 p-6 rounded-lg relative overflow-hidden"
+          {/* Scrollable Container */}
+          <div className="w-full overflow-y-auto custom-scrollbar flex flex-col items-center gap-3 pr-1 py-2">
+            {/* The card */}
+            <div
+              ref={cardRef}
+              className="w-full md:w-96 p-3 md:p-6 rounded-lg relative overflow-hidden flex-shrink-0"
             style={{
               background:
                 "linear-gradient(135deg, #000008 0%, #00000f 50%, #050010 100%)",
@@ -99,12 +102,12 @@ export function ShareCard({ data }: ShareCardProps) {
             />
 
             {/* Header */}
-            <div className="relative z-10 flex items-center justify-between mb-4">
+            <div className="relative z-10 flex items-center justify-between mb-3">
               <div>
-                <p className="font-mono text-xs text-space-cyan/50 tracking-widest">
+                <p className="font-mono text-[10px] text-space-cyan/50 tracking-widest">
                   STACK UNIVERSE
                 </p>
-                <p className="font-orbitron font-black text-xl text-white">
+                <p className="font-orbitron font-black text-lg md:text-xl text-white">
                   THE {data.username.toUpperCase()} SYSTEM
                 </p>
               </div>
@@ -112,7 +115,7 @@ export function ShareCard({ data }: ShareCardProps) {
                 <img
                   src={data.user.avatar_url}
                   alt={data.username}
-                  className="w-12 h-12 rounded-full border-2"
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2"
                   style={{ borderColor: data.languages[0]?.color || "#00e5ff" }}
                   crossOrigin="anonymous"
                 />
@@ -120,7 +123,7 @@ export function ShareCard({ data }: ShareCardProps) {
             </div>
 
             {/* Stats grid */}
-            <div className="relative z-10 grid grid-cols-2 gap-3 mb-4">
+            <div className="relative z-10 grid grid-cols-2 gap-2 md:gap-3 mb-4">
               {[
                 {
                   label: "UNIVERSE SCORE",
@@ -145,17 +148,17 @@ export function ShareCard({ data }: ShareCardProps) {
               ].map(({ label, value, color }) => (
                 <div
                   key={label}
-                  className="p-3 rounded"
+                  className="p-1.5 md:p-3 rounded"
                   style={{
                     background: "rgba(0,0,0,0.5)",
                     border: `1px solid ${color}22`,
                   }}
                 >
-                  <p className="font-mono text-xs text-gray-600 mb-0.5 tracking-widest">
+                  <p className="font-mono text-[7px] md:text-xs text-gray-600 mb-0.5 tracking-widest leading-none uppercase">
                     {label}
                   </p>
                   <p
-                    className="font-orbitron font-bold text-lg leading-tight"
+                    className="font-orbitron font-bold text-sm md:text-lg leading-tight"
                     style={{ color }}
                   >
                     {value}
@@ -210,13 +213,13 @@ export function ShareCard({ data }: ShareCardProps) {
 
             {/* Footer */}
             <div
-              className="relative z-10 text-center pt-3"
+              className="relative z-10 text-center pt-2"
               style={{ borderTop: "1px solid rgba(0,229,255,0.1)" }}
             >
-              <p className="font-mono text-xs text-gray-700">
+              <p className="font-mono text-[9px] text-gray-700">
                 Explore your universe at
               </p>
-              <p className="font-mono text-xs text-space-cyan/60">{shareUrl}</p>
+              <p className="font-mono text-[9px] text-space-cyan/60 truncate">{shareUrl}</p>
             </div>
 
             {/* Corner accents */}
@@ -227,8 +230,8 @@ export function ShareCard({ data }: ShareCardProps) {
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-col gap-3 w-full max-w-sm">
-            <div className="grid grid-cols-2 gap-3 w-full">
+          <div className="flex flex-col gap-2 w-full max-w-sm flex-shrink-0">
+            <div className="grid grid-cols-2 gap-2 w-full">
               <button
                 onClick={() => copyToClipboard(shareUrl, 'link')}
                 className="hud-panel rounded px-5 py-2.5 font-mono text-xs text-space-cyan hover:bg-space-cyan/10 transition-colors tracking-wider flex items-center justify-center gap-2"
@@ -244,55 +247,76 @@ export function ShareCard({ data }: ShareCardProps) {
               </button>
             </div>
 
-            {/* Embed Section */}
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4 w-full">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-orbitron font-bold text-[10px] text-space-gold tracking-widest uppercase">
-                  GitHub README (Animated)
-                </p>
-                <span className="font-mono text-[8px] text-gray-600">1000 x 360</span>
-              </div>
-              <div className="relative group mb-4">
-                <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                  {`[![Stack Universe](${appUrl}/api/embed-v2/${data.username.toLowerCase()}?v=1)](${shareUrl})`}
-                </pre>
-                <button
-                  onClick={() => copyToClipboard(`[![Stack Universe](${appUrl}/api/embed-v2/${data.username.toLowerCase()}?v=1)](${shareUrl})`, 'markdown')}
-                  className="absolute top-2 right-2 bg-space-gold/10 hover:bg-space-gold/20 text-space-gold border border-space-gold/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
-                >
-                  {markdownCopied ? "✓" : "COPY"}
-                </button>
-              </div>
+            {/* Embed Section Toggle */}
+            <div className="w-full flex-shrink-0">
+               <button 
+                  onClick={() => setShowEmbeds(!showEmbeds)}
+                  className="w-full py-2 border-y border-white/5 font-mono text-[8px] text-gray-500 hover:text-white transition-colors tracking-[0.2em] mb-2"
+               >
+                  {showEmbeds ? "[ HIDE EMBED CODES ]" : "[ SHOW EMBED CODES ]"}
+               </button>
 
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-orbitron font-bold text-[10px] text-gray-500 tracking-widest uppercase">
-                  Website Overlay
-                </p>
-                <span className="font-mono text-[8px] text-gray-600">Iframe Code</span>
-              </div>
-              <div className="relative group">
-                <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed opacity-60">
-                  {`<iframe src="${embedUrl}" width="540" height="200" frameborder="0"></iframe>`}
-                </pre>
-                <button
-                  onClick={() => copyToClipboard(`<iframe src="${embedUrl}" width="540" height="200" frameborder="0"></iframe>`, 'embed')}
-                  className="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
-                >
-                  {embedCopied ? "✓" : "COPY"}
-                </button>
-              </div>
-              <p className="mt-3 font-mono text-[8px] text-gray-600 text-center uppercase tracking-tighter">
-                Copy the Markdown link for your GitHub profile!
-              </p>
+               <AnimatePresence>
+                {showEmbeds && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden space-y-3"
+                  >
+                        <div className="bg-white/5 border border-white/10 rounded-lg p-3 w-full">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-orbitron font-bold text-[9px] text-space-gold tracking-widest uppercase">
+                              GitHub README (Animated)
+                            </p>
+                            <span className="font-mono text-[8px] text-gray-600">1000 x 360</span>
+                          </div>
+                          <div className="relative group mb-4">
+                            <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                              {`[![Stack Universe](${appUrl}/api/embed-v2/${data.username.toLowerCase()}?v=1)](${shareUrl})`}
+                            </pre>
+                            <button
+                              onClick={() => copyToClipboard(`[![Stack Universe](${appUrl}/api/embed-v2/${data.username.toLowerCase()}?v=1)](${shareUrl})`, 'markdown')}
+                              className="absolute top-2 right-2 bg-space-gold/10 hover:bg-space-gold/20 text-space-gold border border-space-gold/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              {markdownCopied ? "✓" : "COPY"}
+                            </button>
+                          </div>
+
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="font-orbitron font-bold text-[10px] text-gray-500 tracking-widest uppercase">
+                              Website Overlay
+                            </p>
+                            <span className="font-mono text-[8px] text-gray-600">Iframe Code</span>
+                          </div>
+                          <div className="relative group">
+                            <pre className="bg-black/40 p-3 rounded font-mono text-[9px] text-gray-400 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed opacity-60">
+                              {`<iframe src="${embedUrl}" width="540" height="200" frameborder="0"></iframe>`}
+                            </pre>
+                            <button
+                              onClick={() => copyToClipboard(`<iframe src="${embedUrl}" width="540" height="200" frameborder="0"></iframe>`, 'embed')}
+                              className="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded px-2 py-1 font-mono text-[8px] transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              {embedCopied ? "✓" : "COPY"}
+                            </button>
+                          </div>
+                          <p className="mt-2 font-mono text-[7px] text-gray-600 text-center uppercase tracking-tighter">
+                            Copy the Markdown link for your GitHub profile!
+                          </p>
+                        </div>
+                  </motion.div>
+                )}
+               </AnimatePresence>
             </div>
-
-            <button
-              onClick={() => setShowShareCard(false)}
-              className="mt-2 font-mono text-[9px] text-gray-600 hover:text-white transition-colors tracking-widest uppercase py-2"
-            >
-              [ Close ]
-            </button>
           </div>
+          </div>
+
+          <button
+            onClick={() => setShowShareCard(false)}
+            className="font-mono text-[9px] text-gray-500 hover:text-white transition-colors tracking-widest uppercase py-1 mt-auto"
+          >
+            [ Close ]
+          </button>
         </motion.div>
       </motion.div>
     </AnimatePresence>

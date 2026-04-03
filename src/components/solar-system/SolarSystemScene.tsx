@@ -1,12 +1,16 @@
 'use client'
 
 import { useRef, useState, Suspense, useMemo, useEffect, useCallback } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, extend } from '@react-three/fiber'
 import { OrbitControls, Stars, AdaptiveDpr, Line, Html } from '@react-three/drei'
-import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing'
-import { BlendFunction } from 'postprocessing'
+import { EffectComposer, Bloom, ChromaticAberration, GodRays, Vignette } from '@react-three/postprocessing'
+import { BlendFunction, Resizer, KernelSize } from 'postprocessing'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as THREE from 'three'
+import { StarShaderMaterial } from './StarShaderMaterial'
+import { NebulaShaderMaterial } from './NebulaShaderMaterial'
+import { AsteroidMaterial } from './AsteroidMaterial'
+import { EnergyStream } from './EnergyStream'
 import { CentralStar } from './CentralStar'
 import { Planet } from './Planet'
 import { RepoPlanet } from './RepoPlanet'
@@ -20,6 +24,9 @@ import type { UniverseData, LanguageData, GitHubRepo, ViewMode, ActionRun } from
 import { useUniverseStore } from '@/store'
 import { getLanguageColor } from '@/lib/language-colors'
 import { calcRepoHealth } from '@/lib/repo-health'
+
+// Register custom shader materials globally for R3F
+extend({ StarShaderMaterial, NebulaShaderMaterial, AsteroidMaterial })
 
 // ── Tier orbit constants ──────────────────────────────────────────────────────
 const T1_BASE = 15,  T1_STEP = 7.0
@@ -101,36 +108,6 @@ function CentralBio({ data }: { data: UniverseData }) {
   )
 }
 
-function ConstellationLines({ 
-  tier1, 
-  starSize = 1 
-}: { 
-  tier1: GitHubRepo[]; 
-  starSize?: number 
-}) {
-  return (
-    <group>
-      {tier1.map((repo, i) => {
-        const radius = T1_BASE + i * T1_STEP
-        const angle = (i / tier1.length) * Math.PI * 2
-        const x = Math.cos(angle) * radius
-        const z = Math.sin(angle) * radius
-        const color = getLanguageColor(repo.language || '')
-        
-        return (
-          <Line
-            key={repo.id}
-            points={[[0, 0, 0], [x, 0, z]]}
-            color={color}
-            lineWidth={0.5}
-            transparent
-            opacity={0.12}
-          />
-        )
-      })}
-    </group>
-  )
-}
 
 // ── Language side panel ───────────────────────────────────────────────────────
 function LangPanel({ lang, pinned, onClose }: {
@@ -318,7 +295,7 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, actionRu
   return (
     <motion.div
       key={repo.id}
-      className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-0 md:left-auto md:w-96 z-[120] bg-black/60 md:bg-black/60 backdrop-blur-[40px] border-t md:border-t-0 md:border-l border-white/10 flex flex-col shadow-[0_-20px_80px_rgba(0,0,0,0.8)] md:shadow-[-20px_0_80px_rgba(0,0,0,0.6)] rounded-t-[2.5rem] md:rounded-l-3xl md:rounded-tr-none overflow-hidden max-h-[90vh] md:max-h-none"
+      className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-0 md:left-auto md:w-96 z-[120] luxe-glass md:border-t-0 md:border-l border-white/10 flex flex-col shadow-[-20px_0_80px_rgba(0,0,0,0.6)] rounded-t-[2.5rem] md:rounded-l-2xl md:rounded-tr-none overflow-hidden max-h-[90vh] md:max-h-none hud-corner"
       initial={{ y: "100%", x: 0 }}
       animate={{ y: 0, x: 0 }}
       exit={{ y: "100%", x: 0 }}
@@ -694,7 +671,8 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
   const [commitTooltip, setCommitTooltip]       = useState<CommitTooltipState | null>(null)
   const [beltPanelOpen, setBeltPanelOpen]       = useState(false)
   const [beltHoverPos, setBeltHoverPos]         = useState<{ x: number; y: number } | null>(null)
-  const [perfLevel, setPerfLevel] = useState<'low' | 'high'>('high')
+  const [perfLevel, setPerfLevel]               = useState<'low' | 'high'>('high')
+  const sunRef = useRef<THREE.Mesh>(null)
 
   useEffect(() => {
     const isLowPower = (typeof navigator !== 'undefined' && (navigator.hardwareConcurrency || 8) <= 4) || 
@@ -802,9 +780,16 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
       )}
 
       <Canvas
-        camera={{ position: [0, 40, 140], fov: 45, near: 0.1, far: 2000 }}
-        gl={{ antialias: true, alpha: true }}
-        dpr={[1, 1.5]}
+        shadows
+        camera={{ position: [0, 80, 200], fov: 42, near: 0.1, far: 2000 }}
+        gl={{ 
+          antialias: false, 
+          powerPreference: 'high-performance', 
+          stencil: false,
+          depth: true,
+          alpha: false
+        }}
+        dpr={typeof window !== 'undefined' ? [1, Math.min(window.devicePixelRatio, 2)] : 1}
       >
         <color attach="background" args={['#020205']} />
         <AdaptiveDpr pixelated />
@@ -826,7 +811,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
           />
           
           {/* Subtle accent light for the 'system' center */}
-          <pointLight position={[0, 0, 0]} intensity={1.5} color={primaryColor} distance={150} decay={2} />
+          <pointLight position={[0, 0, 0]} intensity={0.8} color={primaryColor} distance={150} decay={2} />
 
           {/* Ghost planets for < 5 repos */}
           {isEmpty && (
@@ -834,6 +819,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
           )}
 
           <CentralStar
+            ref={sunRef}
             score={data.universeScore}
             totalRepos={data.repos.length}
             totalStars={data.totalStars}
@@ -863,7 +849,17 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
                 />
               ))}
               
-              {viewMode === 'repos' && <ConstellationLines tier1={tier1} />}
+              {tier1.map((repo, i) => {
+                const radius = T1_BASE + i * T1_STEP
+                const angle = (i / tier1.length) * Math.PI * 2
+                return (
+                  <EnergyStream 
+                    key={repo.id}
+                    color={getLanguageColor(repo.language || '')}
+                    end={[Math.cos(angle) * radius, 0, Math.sin(angle) * radius]}
+                  />
+                )
+              })}
               
               {tier2.map((repo, i) => (
                 <RepoPlanet
@@ -960,30 +956,44 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
             onTooltip={setCommitTooltip}
           />
 
-          <EffectComposer>
+          <EffectComposer multisampling={0} enableNormalPass={false}>
             <Bloom
-              intensity={isEmpty ? 0.8 : 1.4}
-              luminanceThreshold={0.3}
+              intensity={1.5}
+              luminanceThreshold={0.15}
               luminanceSmoothing={0.9}
-              blendFunction={BlendFunction.SCREEN}
+              height={300}
             />
+            {sunRef.current ? (
+              <GodRays
+                sun={sunRef.current}
+                blendFunction={BlendFunction.SCREEN}
+                samples={30}
+                density={0.96}
+                decay={0.9}
+                weight={0.3}
+                exposure={0.6}
+                clampMax={1}
+                kernelSize={KernelSize.SMALL}
+              />
+            ) : <></>}
             <ChromaticAberration
               blendFunction={BlendFunction.NORMAL}
-              offset={caOffset}
+              offset={new THREE.Vector2(0.001, 0.001)}
               radialModulation={false}
-              modulationOffset={0}
+              modulationOffset={0.5}
             />
+            <Vignette eskil={false} offset={0.1} darkness={1.1} />
           </EffectComposer>
         </Suspense>
 
         <OrbitControls
-          enablePan={false}
-          enableZoom
-          minDistance={10}
-          maxDistance={viewMode === 'repos' ? 280 : 200}
-          autoRotate={selectedPlanetIndex === null && !selectedRepo}
-          autoRotateSpeed={0.15}
           makeDefault
+          enablePan={false}
+          maxDistance={800}
+          minDistance={30}
+          rotateSpeed={0.5}
+          autoRotate={!selectedPlanetIndex && !selectedRepo}
+          autoRotateSpeed={0.3}
         />
       </Canvas>
 

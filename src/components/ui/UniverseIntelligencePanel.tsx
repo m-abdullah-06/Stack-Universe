@@ -59,7 +59,7 @@ export function UniverseIntelligencePanel({ data, visible }: UniverseIntelligenc
     <AnimatePresence>
       {show && (
         <motion.div
-          className="fixed top-20 md:top-24 right-4 md:right-6 z-[100] w-[280px] md:w-80 cursor-pointer group"
+          className="fixed top-60 md:top-24 right-4 md:right-6 z-[100] w-[min(280px,85vw)] md:w-80 cursor-pointer group"
           initial={{ opacity: 0, x: 20, y: 10, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
           exit={{ opacity: 0, x: 20, scale: 0.95 }}
