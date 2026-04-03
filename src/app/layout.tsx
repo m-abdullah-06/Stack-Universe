@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   verification: {
-    google: "J0HjDfdCbV9fjHZCfziwLaLasyWpiz548jBxFKn9lw8",
+    google: "7EMfk7sLyyutvyQC6o0Ejle8S7xUKp8imFqLkRotVP4",
   },
 };
 
@@ -28,9 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="scanlines bg-space-black overflow-hidden font-mono">
-        <NextAuthProvider>
-          {children}
-        </NextAuthProvider>
+        <NextAuthProvider>{children}</NextAuthProvider>
         <Analytics />
       </body>
     </html>
