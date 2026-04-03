@@ -65,7 +65,7 @@ export function ShareCard({ data }: ShareCardProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[250] flex items-start justify-center pt-72 md:pt-80 bg-black/90 backdrop-blur-sm"
+        className="fixed inset-0 z-[500] flex items-start justify-center pt-[550px] md:pt-32 bg-black/60 backdrop-blur-md"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

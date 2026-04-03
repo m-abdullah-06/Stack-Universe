@@ -78,7 +78,8 @@ export function HUD({ data }: HUDProps) {
       <motion.div
         className={`fixed z-[100] luxe-glass
                     top-0 left-0 right-0 border-b border-white/10
-                    md:top-8 md:left-8 md:right-auto md:bottom-auto md:w-80 md:rounded-xl md:border md:border-white/10 hud-corner`}
+                    md:top-8 md:left-8 md:right-auto md:bottom-auto md:w-80 md:rounded-xl md:border md:border-white/10 hud-corner
+                    ${isAnyPanelOpen ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}
         initial={{ opacity: 0, x: -40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
