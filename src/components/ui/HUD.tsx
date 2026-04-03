@@ -104,9 +104,6 @@ export function HUD({ data }: HUDProps) {
               <button onClick={() => router.push('/')} className="p-1.5 text-gray-500 hover:text-white transition-colors" title="Exit">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               </button>
-              <button onClick={() => setShowShareCard(true)} className="p-1.5 text-space-magenta/70 hover:text-space-magenta transition-colors" title="Share & Embed">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-              </button>
               <button onClick={toggleHallOfGiants} className="p-1.5 text-space-gold/70 hover:text-space-gold transition-colors" title="Leaderboard">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
               </button>
@@ -174,6 +171,10 @@ export function HUD({ data }: HUDProps) {
             <button onClick={() => setShowIdentityPanel(true)} className="flex flex-col items-center gap-1 group">
               <span className="text-[14px] group-hover:scale-110 transition-transform">⚙️</span>
               <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">Identity</span>
+            </button>
+            <button onClick={() => setShowShareCard(true)} className="flex flex-col items-center gap-1 group">
+              <span className="text-[14px] group-hover:scale-110 transition-transform text-space-magenta">⧉</span>
+              <span className="text-[7px] font-mono text-space-magenta/60 uppercase group-hover:text-space-magenta transition-colors">Share</span>
             </button>
           </div>
 
@@ -346,31 +347,7 @@ export function HUD({ data }: HUDProps) {
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-2">
-            <motion.button 
-              onClick={() => router.push('/')}
-              whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.06)' }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.03] border border-white/5 transition-all font-mono text-[8px] text-gray-400 hover:text-white uppercase tracking-wider">
-              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-              Exit
-            </motion.button>
-            <motion.button 
-              onClick={() => setShowShareCard(true)}
-              whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,0,255,0.08)' }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.03] border border-space-magenta/20 transition-all font-mono text-[8px] text-space-magenta/70 hover:text-space-magenta uppercase tracking-wider">
-              Share
-            </motion.button>
-            <motion.button 
-              onClick={toggleHallOfGiants}
-              whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,215,0,0.08)' }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.03] border border-space-gold/20 transition-all font-mono text-[8px] text-space-gold/70 hover:text-space-gold uppercase tracking-wider">
-              ★ Top
-            </motion.button>
-          </div>
+
 
           <div className="space-y-3 pt-1">
             <p className="text-[8px] font-mono text-white/20 uppercase tracking-[0.2em] px-1">AI Intelligence Layer</p>
@@ -404,6 +381,31 @@ export function HUD({ data }: HUDProps) {
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/[0.03] border border-space-cyan/20 transition-colors font-orbitron text-[9px] text-space-cyan uppercase tracking-wider">
               <span className="text-xs">⚙️</span> DIAGNOSE IDENTITY
             </motion.button>
+
+            {/* Action Buttons (Relocated) */}
+            <div className="grid grid-cols-3 gap-2 pt-2">
+              <motion.button 
+                onClick={() => router.push('/')}
+                whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.06)' }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 transition-all font-mono text-[7px] text-gray-500 hover:text-white uppercase tracking-wider">
+                Exit
+              </motion.button>
+              <motion.button 
+                onClick={() => setShowShareCard(true)}
+                whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,0,255,0.08)' }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white/[0.03] border border-space-magenta/30 transition-all font-mono text-[7px] text-space-magenta/70 hover:text-space-magenta uppercase tracking-wider">
+                Share
+              </motion.button>
+              <motion.button 
+                onClick={toggleHallOfGiants}
+                whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,215,0,0.08)' }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white/[0.03] border border-space-gold/20 transition-all font-mono text-[7px] text-space-gold/70 hover:text-space-gold uppercase tracking-wider">
+                Leaderboard
+              </motion.button>
+            </div>
           </div>
 
           {/* NLQ Input */}
