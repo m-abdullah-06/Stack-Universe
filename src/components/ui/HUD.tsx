@@ -294,9 +294,26 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
                   }
                 }}
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-30 group-focus-within:opacity-100 transition-opacity">
+              <button 
+                onClick={(e) => {
+                  const input = e.currentTarget.parentElement?.querySelector('input');
+                  if (!input) return;
+                  const val = input.value;
+                  if (!val.trim()) return;
+                  
+                  window.dispatchEvent(new CustomEvent('universe:broadcast', { 
+                    detail: { text: val, user: session?.user?.name || 'Traveler' } 
+                  }));
+                  
+                  input.value = '';
+                  setQueryFeedback('Transmitted');
+                  if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+                  feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 3000);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-50 hover:opacity-100 hover:text-white group-focus-within:opacity-100 transition-opacity p-1"
+              >
                 ↵
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -491,9 +508,26 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
                   }
                 }}
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-30 group-focus-within:opacity-100 transition-opacity">
+              <button 
+                onClick={(e) => {
+                  const input = e.currentTarget.parentElement?.querySelector('input');
+                  if (!input) return;
+                  const val = input.value;
+                  if (!val.trim()) return;
+                  
+                  window.dispatchEvent(new CustomEvent('universe:broadcast', { 
+                    detail: { text: val, user: session?.user?.name || 'Traveler' } 
+                  }));
+                  
+                  input.value = '';
+                  setQueryFeedback('Transmitted');
+                  if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+                  feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 3000);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-50 hover:opacity-100 hover:text-white group-focus-within:opacity-100 transition-opacity p-1"
+              >
                 ↵
-              </div>
+              </button>
             </div>
 
             <p className="text-[8px] font-mono text-white/20 uppercase tracking-[0.2em] px-1 pt-2">AI Intelligence Layer</p>

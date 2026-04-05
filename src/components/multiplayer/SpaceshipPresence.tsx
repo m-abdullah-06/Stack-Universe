@@ -56,22 +56,22 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
       },
     })
 
-    // Broadcast handler — adds to chat panel
+    // Broadcast handler — pushes to API which writes to Supabase DB
     const handleLocalBroadcast = async (e: any) => {
-      const msg: ChatMessage = {
-        id: Math.random().toString(36).slice(2),
-        user: e.detail.user,
-        text: e.detail.text,
-        timestamp: Date.now(),
+      try {
+        console.log('[Presence] Pushing broadcast to DB...', e.detail)
+        await fetch('/api/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            room: normalizedRoom,
+            user: e.detail.user,
+            text: e.detail.text
+          })
+        })
+      } catch (err) {
+        console.error('[Presence] Failed to broadcast:', err)
       }
-      setMessages(prev => [...prev.slice(-19), msg])
-      setShowChat(true)
-
-      channel.send({
-        type: 'broadcast',
-        event: 'message',
-        payload: e.detail
-      })
     }
 
     channel
@@ -86,16 +86,31 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
         }
         setOthers(newOthers)
       })
-      .on('broadcast', { event: 'message' }, ({ payload }) => {
-        // Received message from another pilot — add to chat
-        const msg: ChatMessage = {
-          id: Math.random().toString(36).slice(2),
-          user: payload.user,
-          text: payload.text,
-          timestamp: Date.now(),
-        }
-        setMessages(prev => [...prev.slice(-19), msg])
-        setShowChat(true)
+      .on(
+        'postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'activity_log', filter: `action=eq.transmitted` }, 
+        (payload: any) => {
+          // Verify it's for this room
+          if (payload.new.target !== normalizedRoom) return
+          
+          const msg: ChatMessage = {
+            id: payload.new.id,
+            user: payload.new.username,
+            text: payload.new.metadata.text,
+            timestamp: new Date(payload.new.created_at).getTime(),
+          }
+          
+          setMessages(prev => {
+            // Deduplicate (just in case)
+            if (prev.some(m => m.id === msg.id)) return prev
+            return [...prev.slice(-19), msg]
+          })
+          setShowChat(true)
+          
+          // Trigger a visuals-only event for the 3D scene
+          window.dispatchEvent(new CustomEvent('universe:shooting_star', { 
+            detail: { text: msg.text, user: msg.user } 
+          }));
       })
       .subscribe(async (status) => {
         console.log(`[Presence] Channel status: ${status}`)
