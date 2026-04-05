@@ -50,9 +50,9 @@ export async function POST(
   if (!supabaseAdmin) return NextResponse.json({ error: 'DB_ADMIN_OFFLINE' }, { status: 503 })
 
   try {
-    const { github_id } = await req.json()
+    const { github_id, email, weekly_digest } = await req.json()
     const normalizedUsername = username.toLowerCase()
-    console.log('Claiming universe:', { username: normalizedUsername, github_id })
+    console.log('Claiming universe:', { username: normalizedUsername, github_id, email, weekly_digest })
 
     // Check if already claimed (using lowercase)
     const { data: existing } = await supabaseAdmin
@@ -74,7 +74,9 @@ export async function POST(
           star_color: '#ffffff',
           entry_msg: '',
           bio: '',
-          pinned_repos: []
+          pinned_repos: [],
+          email: email || null,
+          weekly_digest: !!weekly_digest
         }
       ])
       .select()
@@ -114,6 +116,8 @@ export async function PUT(
     entry_msg: body.entry_msg,
     bio: body.bio,
     pinned_repos: body.pinned_repos,
+    email: body.email,
+    weekly_digest: body.weekly_digest,
     updated_at: new Date().toISOString()
   }
 

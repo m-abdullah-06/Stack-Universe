@@ -11,9 +11,11 @@ import { AmbientAudio } from './AmbientAudio'
 
 interface HUDProps {
   data: UniverseData
+  cockpitMode: boolean
+  setCockpitMode: (val: boolean) => void
 }
 
-export function HUD({ data }: HUDProps) {
+export function HUD({ data, cockpitMode, setCockpitMode }: HUDProps) {
   const router = useRouter()
   const { data: session } = useSession()
   const { 
@@ -37,6 +39,8 @@ export function HUD({ data }: HUDProps) {
   
   const [isQuerying, setIsQuerying] = useState(false)
   const [queryFeedback, setQueryFeedback] = useState<string | null>(null)
+  const [isWeeklyDigestChecked, setIsWeeklyDigestChecked] = useState(true)
+  const [customEmail, setCustomEmail] = useState(session?.user?.email || '')
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isOwner = session?.user && (session.user as any).login === data.username
@@ -47,12 +51,17 @@ export function HUD({ data }: HUDProps) {
     setClaimData(data.claim)
   }
 
-  const handleClaim = async () => {
+  const handleClaim = async (optIn: boolean) => {
     try {
+      const emailToUse = optIn ? (customEmail || session?.user?.email) : null
       const res = await fetch(`/api/claim/${data.username}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ github_id: data.user.login })
+        body: JSON.stringify({ 
+          github_id: data.user.login,
+          email: emailToUse,
+          weekly_digest: optIn
+        })
       })
       if (!res.ok) {
         const errJson = await res.json()
@@ -105,6 +114,17 @@ export function HUD({ data }: HUDProps) {
             <div className="flex items-center gap-0.5 flex-shrink-0">
               <button onClick={() => router.push('/')} className="p-1.5 text-gray-500 hover:text-white transition-colors" title="Exit">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              </button>
+              <button 
+                onClick={() => setCockpitMode(!cockpitMode)}
+                className={`p-1.5 transition-all ${
+                  cockpitMode 
+                    ? 'text-space-magenta drop-shadow-[0_0_8px_rgba(255,0,110,0.8)]' 
+                    : 'text-gray-500 hover:text-white'
+                }`}
+                title="Enter Starship Cockpit"
+              >
+                🚀
               </button>
               <button onClick={toggleHallOfGiants} className="p-1.5 text-space-gold/70 hover:text-space-gold transition-colors" title="Leaderboard">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
@@ -261,18 +281,34 @@ export function HUD({ data }: HUDProps) {
                   className="w-12 h-12 rounded-full border-2 border-space-cyan/20 group-hover:border-space-cyan/40 transition-all duration-500 shadow-[0_0_20px_rgba(0,229,255,0.1)]" />
               )}
               <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-space-cyan border-2 border-[#020205] flex items-center justify-center text-[7px] text-black font-bold">✓</div>
+              
+              {/* Rocket Toggle Overlay */}
+              <button 
+                onClick={() => setCockpitMode(!cockpitMode)}
+                className={`absolute -top-1 -left-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] transition-all z-20 ${
+                  cockpitMode 
+                    ? 'bg-space-magenta text-white shadow-[0_0_15px_rgba(255,0,110,0.6)] border border-white/20' 
+                    : 'bg-black/80 border border-white/10 text-gray-400 hover:text-white hover:border-space-cyan/50'
+                }`}
+                title="Enter Starship Cockpit"
+              >
+                🚀
+              </button>
             </div>
-            <div>
-              <p className="font-orbitron text-[8px] text-space-cyan/40 tracking-[0.2em] mb-0.5">UNIVERSE OF</p>
-              <div className="flex items-center gap-2">
-                <p className="font-orbitron font-bold text-white text-sm leading-tight">@{data.username}</p>
-                {isClaimed && (
-                  <span className="bg-space-gold/20 text-space-gold text-[7px] font-bold px-1.5 py-0.5 rounded border border-space-gold/30 tracking-tighter shadow-[0_0_10px_rgba(255,215,0,0.2)]">
-                    ✓ CLAIMED
-                  </span>
-                )}
+            <div className="flex-1 min-w-0">
+              <p className="font-orbitron font-bold text-white text-sm truncate">@{data.username}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] font-orbitron text-space-cyan font-bold leading-none">{data.universeScore.toLocaleString()}</span>
+                <span className="text-[7px] font-mono text-gray-500 uppercase tracking-tighter">PTS SYNC</span>
               </div>
             </div>
+          </div>
+
+          {/* Desktop Controls Row */}
+          <div className="flex items-center gap-2">
+            <AmbientAudio />
+            <div className="h-4 w-px bg-white/10 mx-1" />
+            <LoginButton className="!px-3 !py-1.5 !bg-white/5 !text-[9px]" />
           </div>
 
           {/* Universe Bio (Desktop) */}
@@ -286,16 +322,64 @@ export function HUD({ data }: HUDProps) {
 
           {/* Claim CTA for owners */}
           {isOwner && !isClaimed && (
-            <motion.button
-              onClick={handleClaim}
-              className="w-full bg-space-gold text-black font-orbitron font-black text-[10px] py-2.5 rounded-lg tracking-[0.2em] shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:shadow-[0_0_30px_rgba(255,215,0,0.5)] transition-all uppercase"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              CLAIM YOUR UNIVERSE
-            </motion.button>
+            <div className="space-y-3">
+              <label 
+                className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all duration-300 group ${
+                  isWeeklyDigestChecked ? 'bg-space-cyan/5 border-space-cyan/30 shadow-[0_0_15px_rgba(0,229,255,0.1)]' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    id="weekly-digest-opt-in"
+                    className="peer sr-only"
+                    checked={isWeeklyDigestChecked}
+                    onChange={(e) => setIsWeeklyDigestChecked(e.target.checked)}
+                  />
+                  <div className={`w-5 h-5 border-2 rounded transition-all ${isWeeklyDigestChecked ? 'border-space-cyan bg-space-cyan/20' : 'border-white/20'}`} />
+                  <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isWeeklyDigestChecked ? 'opacity-100' : 'opacity-0'}`}>
+                    <svg className="w-3 h-3 text-space-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className={`text-[10px] font-orbitron font-bold transition-colors ${isWeeklyDigestChecked ? 'text-space-cyan' : 'text-white'}`}>Weekly Digest Email</p>
+                  <p className="text-[8px] font-mono text-gray-500">Every Monday summary of your universe growth.</p>
+                </div>
+              </label>
+
+              <AnimatePresence>
+                {isWeeklyDigestChecked && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-3 bg-white/[0.02] border border-white/5 rounded-lg space-y-2">
+                      <p className="text-[8px] font-mono text-gray-500 uppercase tracking-widest">Delivery Address</p>
+                      <input 
+                        type="email"
+                        value={customEmail}
+                        onChange={(e) => setCustomEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full bg-black/40 border border-white/10 rounded-md py-1.5 px-3 font-mono text-[10px] text-white focus:outline-none focus:border-space-cyan/50 transition-colors"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.button
+                onClick={() => handleClaim(isWeeklyDigestChecked)}
+                className="w-full bg-space-gold text-black font-orbitron font-black text-[10px] py-2.5 rounded-lg tracking-[0.2em] shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:shadow-[0_0_30px_rgba(255,215,0,0.5)] transition-all uppercase"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                CLAIM YOUR UNIVERSE
+              </motion.button>
+            </div>
           )}
 
           {/* Score & Status */}
@@ -352,7 +436,35 @@ export function HUD({ data }: HUDProps) {
 
 
           <div className="space-y-3 pt-1">
-            <p className="text-[8px] font-mono text-white/20 uppercase tracking-[0.2em] px-1">AI Intelligence Layer</p>
+            <p className="text-[8px] font-mono text-white/20 uppercase tracking-[0.2em] px-1">Cosmic Transmission</p>
+            
+            <div className="relative group">
+              <input 
+                type="text" 
+                maxLength={40}
+                placeholder="Broadcast a signal..."
+                className="w-full bg-white/[0.03] border border-white/10 rounded-lg py-2 pl-3 pr-10 font-mono text-[9px] text-space-cyan placeholder:text-gray-700 focus:outline-none focus:border-space-cyan/40 transition-all"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const val = e.currentTarget.value;
+                    if (!val.trim()) return;
+                    
+                    // Dispatch to parent handler via custom event or prop
+                    window.dispatchEvent(new CustomEvent('universe:broadcast', { 
+                      detail: { text: val, user: session?.user?.name || 'Traveler' } 
+                    }));
+                    
+                    e.currentTarget.value = '';
+                    setQueryFeedback('Signal Transmitted');
+                  }
+                }}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-30 group-focus-within:opacity-100 transition-opacity">
+                ↵
+              </div>
+            </div>
+
+            <p className="text-[8px] font-mono text-white/20 uppercase tracking-[0.2em] px-1 pt-2">AI Intelligence Layer</p>
             <div className="grid grid-cols-2 gap-2">
               <motion.button 
                 onClick={() => setShowNarrator(true)}

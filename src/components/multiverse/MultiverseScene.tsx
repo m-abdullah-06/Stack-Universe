@@ -12,14 +12,100 @@ import * as THREE from 'three'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-// Very slow camera drift
-function DriftCamera() {
+import { useKeyboard } from '@/hooks/useKeyboard'
+
+// Interactive WASD Flight with Proximity Triggers
+function ControlledShipCamera({ 
+  cockpitMode, 
+  universes, 
+  onTargetSelect,
+  onProximityChange
+}: { 
+  cockpitMode?: boolean, 
+  universes: StoredUniverse[],
+  onTargetSelect?: (username: string) => void,
+  onProximityChange?: (username: string | null) => void
+}) {
+  const keys = useKeyboard()
   const t = useRef(0)
+  const targetLookAt = useRef(new THREE.Vector3(0, 0, -500))
+  const lastProximityTrigger = useRef<string | null>(null)
+  const lastWarningTarget = useRef<string | null>(null)
+
   useFrame((state, delta) => {
+    if (cockpitMode) {
+      // 1. Position Setup (Movement)
+      const moveSpeed = delta * 60
+      const direction = new THREE.Vector3()
+      state.camera.getWorldDirection(direction)
+      const side = new THREE.Vector3().crossVectors(state.camera.up, direction).normalize()
+
+      if (keys.forward) state.camera.position.addScaledVector(direction, moveSpeed)
+      if (keys.backward) state.camera.position.addScaledVector(direction, -moveSpeed)
+      if (keys.left) state.camera.position.addScaledVector(side, moveSpeed)
+      if (keys.right) state.camera.position.addScaledVector(side, -moveSpeed)
+      if (keys.up) state.camera.position.y += moveSpeed
+      if (keys.down) state.camera.position.y -= moveSpeed
+
+      // 2. Interactive Steering (Mouse-based)
+      const steerX = state.pointer.x * 150
+      const steerY = state.pointer.y * 100
+      const nextLookAt = new THREE.Vector3(
+        state.camera.position.x + steerX, 
+        state.camera.position.y + steerY, 
+        state.camera.position.z - 500
+      )
+      targetLookAt.current.lerp(nextLookAt, 0.03)
+      state.camera.lookAt(targetLookAt.current)
+
+      // 3. Dynamic Bank (Z-rotation)
+      state.camera.rotation.z = THREE.MathUtils.lerp(
+        state.camera.rotation.z,
+        -state.pointer.x * 0.15,
+        0.05
+      )
+
+      // 4. Proximity Detection (Auto-Trigger & Warning)
+      let nearestTarget: string | null = null
+      for (const u of universes) {
+        const uPos = new THREE.Vector3(u.position_x, u.position_y, u.position_z)
+        const dist = state.camera.position.distanceTo(uPos)
+        
+        // Entry threshold (Much tighter now to prevent accidental warp)
+        if (dist < 6 && lastProximityTrigger.current !== u.username) {
+          lastProximityTrigger.current = u.username
+          onTargetSelect?.(u.username)
+          break
+        }
+
+        // Warning threshold
+        if (dist < 25) {
+          nearestTarget = u.username
+        }
+      }
+
+      if (nearestTarget !== lastWarningTarget.current) {
+        lastWarningTarget.current = nearestTarget
+        onProximityChange?.(nearestTarget)
+      }
+
+      // 5. Hyperspace FOV Stretching (Speed Effect)
+      if ((state.camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+        const cam = state.camera as THREE.PerspectiveCamera
+        const targetFov = keys.forward ? 85 : 75
+        cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov, 0.05)
+        cam.updateProjectionMatrix()
+      }
+
+      return
+    }
+
+    // Standard Map Mode Drift
     t.current += delta * 0.05
     state.camera.position.x = Math.sin(t.current) * 8
     state.camera.position.y = Math.cos(t.current * 0.7) * 3
     state.camera.lookAt(0, 0, 0)
+    state.camera.rotation.z = 0
   })
   return null
 }
@@ -74,13 +160,26 @@ interface MultiverseSceneProps {
   leaderboard: LeaderboardEntry[]
   isWarping?: boolean
   onWarpStart?: () => void
+  cockpitMode?: boolean
+  selectedTarget?: string | null
+  onTargetSelect?: (username: string) => void
+  onProximityChange?: (username: string | null) => void
 }
 
-export function MultiverseScene({ universes, leaderboard, isWarping, onWarpStart }: MultiverseSceneProps) {
+export function MultiverseScene({ 
+  universes, 
+  leaderboard, 
+  isWarping, 
+  onWarpStart,
+  cockpitMode,
+  selectedTarget,
+  onTargetSelect,
+  onProximityChange
+}: MultiverseSceneProps) {
   const router = useRouter()
 
   const handlePointerMissed = async () => {
-    if (isWarping) return
+    if (isWarping || cockpitMode) return
     onWarpStart?.()
 
     try {
@@ -102,7 +201,7 @@ export function MultiverseScene({ universes, leaderboard, isWarping, onWarpStart
   return (
     <div className="absolute inset-0" style={{ cursor: isWarping ? 'wait' : 'pointer' }}>
       <Canvas
-        onPointerMissed={handlePointerMissed}
+        onPointerMissed={cockpitMode ? undefined : handlePointerMissed}
         camera={{ position: [0, 20, 80], fov: 75, near: 0.1, far: 3000 }}
         gl={{ antialias: true, alpha: false }}
         dpr={[1, 1.5]}
@@ -110,12 +209,22 @@ export function MultiverseScene({ universes, leaderboard, isWarping, onWarpStart
       >
         <AdaptiveDpr pixelated />
         <ambientLight intensity={0.02} />
-        <DriftCamera />
+        <ControlledShipCamera 
+          cockpitMode={cockpitMode} 
+          universes={universes}
+          onTargetSelect={onTargetSelect}
+          onProximityChange={onProximityChange}
+        />
 
         <Suspense fallback={null}>
           <Stars radius={500} depth={120} count={12000} factor={6} saturation={0.5} fade speed={0.25} />
           <NebulaClouds />
-          <DistantUniverses universes={universes} top10Usernames={leaderboard.slice(0, 10).map((e) => e.username)} />
+          <DistantUniverses 
+            universes={universes} 
+            top10Usernames={leaderboard.slice(0, 10).map((e) => e.username)} 
+            cockpitMode={cockpitMode}
+            onTargetSelect={onTargetSelect}
+          />
 
           <EffectComposer>
             <Bloom

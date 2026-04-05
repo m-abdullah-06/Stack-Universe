@@ -7,6 +7,7 @@ import { EffectComposer, Bloom, ChromaticAberration, GodRays, Vignette } from '@
 import { BlendFunction, Resizer, KernelSize } from 'postprocessing'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as THREE from 'three'
+import { useKeyboard } from '@/hooks/useKeyboard'
 import { StarShaderMaterial } from './StarShaderMaterial'
 import { NebulaShaderMaterial } from './NebulaShaderMaterial'
 import { AsteroidMaterial } from './AsteroidMaterial'
@@ -17,6 +18,7 @@ import { RepoPlanet } from './RepoPlanet'
 import { TierBeltMesh, BeltHoverLabel, BeltRepoPanel } from './TierBelt'
 import { AsteroidBelt, BeltStats } from './AsteroidBelt'
 import { ShootingStars } from './ShootingStars'
+import { UserMessageStars } from './UserMessageStars'
 import type { CommitTooltipState } from './ShootingStars'
 import { Nebula, resolveNebulaType } from './Nebula'
 import { EmptyUniverse } from './EmptyUniverse'
@@ -661,9 +663,10 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, actionRu
 // ── Main Scene ────────────────────────────────────────────────────────────────
 interface SolarSystemSceneProps {
   data: UniverseData
+  cockpitMode?: boolean
 }
 
-export function SolarSystemScene({ data }: SolarSystemSceneProps) {
+export function SolarSystemScene({ data, cockpitMode }: SolarSystemSceneProps) {
   const { selectedPlanetIndex, setSelectedPlanetIndex, viewMode, setViewMode } = useUniverseStore()
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageData | null>(null)
   const [hoveredLanguage, setHoveredLanguage]   = useState<LanguageData | null>(null)
@@ -679,6 +682,42 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
                        (typeof window !== 'undefined' && window.innerWidth < 768)
     if (isLowPower) setPerfLevel('low')
   }, [])
+  const keys = useKeyboard()
+  const targetLookAt = useRef(new THREE.Vector3(0, 0, -500))
+
+  // ── Cockpit Camera Logic (Multiverse Scale) ──
+  useFrame((state) => {
+    if (cockpitMode) {
+      // 1. Position Setup (Controlled Movement)
+      const moveSpeed = 0.5
+      const direction = new THREE.Vector3()
+      state.camera.getWorldDirection(direction)
+      const side = new THREE.Vector3().crossVectors(state.camera.up, direction).normalize()
+
+      if (keys.forward) state.camera.position.addScaledVector(direction, moveSpeed)
+      if (keys.backward) state.camera.position.addScaledVector(direction, -moveSpeed)
+      if (keys.left) state.camera.position.addScaledVector(side, moveSpeed)
+      if (keys.right) state.camera.position.addScaledVector(side, -moveSpeed)
+
+      // 2. Interactive Steering (Mouse-based)
+      const steerX = state.pointer.x * 40
+      const steerY = state.pointer.y * 20
+      const nextLookAt = new THREE.Vector3(
+        state.camera.position.x + steerX, 
+        state.camera.position.y + steerY, 
+        state.camera.position.z - 500
+      )
+      targetLookAt.current.lerp(nextLookAt, 0.03)
+      state.camera.lookAt(targetLookAt.current)
+
+      // 3. Roll/Bank Effect
+      state.camera.rotation.z = THREE.MathUtils.lerp(
+        state.camera.rotation.z,
+        -state.pointer.x * 0.1,
+        0.05
+      )
+    }
+  })
 
   // ── Computed nebula state ──────────────────────────────────────────────────
   const ownRepos    = useMemo(() => data.repos.filter(r => !r.fork), [data.repos])
@@ -955,6 +994,7 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
             repos={data.repos.slice(0, 10).map(r => ({ name: r.name, html_url: r.html_url }))}
             onTooltip={setCommitTooltip}
           />
+          <UserMessageStars />
 
           <EffectComposer multisampling={0} enableNormalPass={false}>
             <Bloom
@@ -989,10 +1029,12 @@ export function SolarSystemScene({ data }: SolarSystemSceneProps) {
         <OrbitControls
           makeDefault
           enablePan={false}
+          enableRotate={!cockpitMode}
+          enableZoom={!cockpitMode}
           maxDistance={800}
           minDistance={30}
           rotateSpeed={0.5}
-          autoRotate={!selectedPlanetIndex && !selectedRepo}
+          autoRotate={!selectedPlanetIndex && !selectedRepo && !cockpitMode}
           autoRotateSpeed={0.3}
         />
       </Canvas>

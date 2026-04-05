@@ -1,0 +1,135 @@
+'use client'
+
+import { useEffect, useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { supabase } from '@/lib/supabase'
+
+interface PresenceState {
+  user: string
+  x: number
+  y: number
+  lastSeen: number
+}
+
+interface SpaceshipPresenceProps {
+  room: string
+  currentUser: string | null
+}
+
+export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps) {
+  const [others, setOthers] = useState<Record<string, PresenceState>>({})
+  const mousePos = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (!supabase) return
+
+    const channel = supabase.channel(`presence:${room}`, {
+      config: {
+        presence: {
+          key: currentUser || `anon-${Math.random().toString(36).slice(2, 7)}`,
+        },
+      },
+    })
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState() as any
+        const newOthers: Record<string, PresenceState> = {}
+        
+        for (const key in state) {
+          if (key === currentUser) continue
+          const p = state[key][0]
+          if (p) newOthers[key] = p
+        }
+        setOthers(newOthers)
+      })
+      .on('broadcast', { event: 'message' }, ({ payload }) => {
+        // Trigger a visuals-only event for the 3D scene
+        window.dispatchEvent(new CustomEvent('universe:shooting_star', { 
+           detail: { text: payload.text, user: payload.user } 
+        }));
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Listen for local broadcast requests from HUD
+          const handleLocalBroadcast = (e: any) => {
+            channel.send({
+              type: 'broadcast',
+              event: 'message',
+              payload: e.detail
+            });
+            // Also show locally
+            window.dispatchEvent(new CustomEvent('universe:shooting_star', { 
+              detail: e.detail 
+            }));
+          };
+          window.addEventListener('universe:broadcast', handleLocalBroadcast);
+          
+          await channel.track({
+            user: currentUser || 'Traveler',
+            x: 0,
+            y: 0,
+            lastSeen: Date.now()
+          })
+        }
+      })
+
+    // Track mouse and broadcast frequently
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePos.current = { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight }
+    }
+
+    const interval = setInterval(() => {
+      channel.track({
+        user: currentUser || 'Traveler',
+        x: mousePos.current.x,
+        y: mousePos.current.y,
+        lastSeen: Date.now()
+      })
+    }, 100) // 10Hz updates for smoothness
+
+    window.addEventListener('mousemove', handleMouseMove)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      clearInterval(interval)
+      channel.unsubscribe()
+    }
+  }, [room, currentUser])
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
+      <AnimatePresence>
+        {Object.entries(others).map(([key, p]) => (
+          <motion.div
+            key={key}
+            className="absolute flex flex-col items-center"
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: 1,
+              left: `${p.x * 100}%`,
+              top: `${p.y * 100}%`,
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 120, mass: 0.5 }}
+          >
+            {/* Tiny Geometric Spaceship (Triangle) */}
+            <svg width="12" height="12" viewBox="0 0 24 24" className="fill-space-cyan drop-shadow-[0_0_8px_rgba(0,229,255,0.8)]">
+              <path d="M12 2L2 22L12 18L22 22L12 2Z" />
+            </svg>
+            
+            {/* Username Tag */}
+            <div className="mt-1 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10">
+              <span className="font-mono text-[7px] text-white/70 uppercase tracking-tighter">
+                @{p.user}
+              </span>
+            </div>
+            
+            {/* Engine Trail (CSS Pulse) */}
+            <div className="w-1 h-4 bg-gradient-to-t from-transparent to-space-cyan/30 mt-[-2px] blur-[1px] animate-pulse" />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}

@@ -16,12 +16,18 @@ import { NarratorPanel } from '@/components/ui/NarratorPanel'
 import { RoastPanel } from '@/components/ui/RoastPanel'
 import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
 import { IdentityPanel } from '@/components/ui/IdentityPanel'
+import { SpaceshipPresence } from '@/components/multiplayer/SpaceshipPresence'
+import { UniverseRadio } from '@/components/audio/UniverseRadio'
+import { AuthGate } from '@/components/ui/AuthGate'
+import { CockpitOverlay } from '@/components/ui/CockpitOverlay'
 import { useUniverseStore } from '@/store'
+import { useSession } from 'next-auth/react'
 import type { UniverseData } from '@/types'
 
 type LoadState = 'cinematic' | 'loading' | 'ready' | 'error'
 
 export default function UniverseClient() {
+  const { data: session, status } = useSession()
   const params = useParams()
   const router = useRouter()
   const rawUsername = params?.username as string
@@ -31,6 +37,11 @@ export default function UniverseClient() {
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
+  const [cockpitMode, setCockpitMode] = useState(false)
+
+  const loggedInUser = session?.user
+    ? (session.user as any).login || session.user.name
+    : null;
 
   // Fetch universe data in background while cinematic plays
   useEffect(() => {
@@ -59,20 +70,6 @@ export default function UniverseClient() {
         setData(finalData)
         setCurrentUniverse(finalData)
         setClaimData(claimJson.claim || null)
-
-        // Store in Supabase (background, don't await)
-        fetch('/api/universes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: json.username,
-            universe_score: json.universeScore,
-            total_stars: json.totalStars,
-            total_repos: json.repos.length,
-            language_count: json.languages.length,
-            account_age_years: json.accountAgeYears,
-          }),
-        }).catch(console.warn)
       } catch (err: unknown) {
         setErrorMsg(err instanceof Error ? err.message : 'Unknown error')
         setLoadState('error')
@@ -105,6 +102,10 @@ export default function UniverseClient() {
         <p className="font-mono text-space-magenta">Invalid username</p>
       </div>
     )
+  }
+
+  if (status === 'unauthenticated') {
+    return <AuthGate />
   }
 
   return (
@@ -167,8 +168,39 @@ export default function UniverseClient() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <SolarSystemScene data={data} />
-          <HUD data={data} />
+          <SolarSystemScene data={data} cockpitMode={cockpitMode} />
+          {/* HUD Layer */}
+          <AnimatePresence>
+            {!cockpitMode && (
+              <HUD 
+                data={data} 
+                cockpitMode={cockpitMode}
+                setCockpitMode={setCockpitMode}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Cockpit Mode Overlay */}
+          <AnimatePresence>
+            {cockpitMode && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8 }}
+              >
+                <CockpitOverlay 
+                  data={data} 
+                  onExit={() => setCockpitMode(false)} 
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Phase 2: Social & Audio */}
+          <SpaceshipPresence room={username} currentUser={loggedInUser} />
+          <UniverseRadio score={data.universeScore} languages={data.languages.map(l => l.name)} />
+
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
           <NarratorPanel data={data} />
@@ -179,6 +211,10 @@ export default function UniverseClient() {
           <SpaceWeather data={data} />
           <HallOfGiants />
           <ShareCard data={data} />
+          
+          {cockpitMode && (
+            <CockpitOverlay data={data} onExit={() => setCockpitMode(false)} />
+          )}
         </motion.div>
       )}
 

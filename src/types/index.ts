@@ -108,6 +108,8 @@ export interface ClaimData {
   pinned_repos: string[]
   created_at: string
   updated_at: string
+  email?: string | null
+  weekly_digest?: boolean
 }
 
 export interface UniverseData {
@@ -147,6 +149,7 @@ export interface StoredUniverse {
   position_z: number
   created_at: string
   updated_at: string
+  top_languages?: string[]
 }
 
 export interface LeaderboardEntry {

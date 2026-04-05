@@ -10,9 +10,11 @@ import type { StoredUniverse } from '@/types'
 interface DistantUniverseOrbProps {
   universe: StoredUniverse
   isTop10: boolean
+  cockpitMode?: boolean
+  onTargetSelect?: (username: string) => void
 }
 
-function DistantUniverseOrb({ universe, isTop10 }: DistantUniverseOrbProps) {
+function DistantUniverseOrb({ universe, isTop10, cockpitMode, onTargetSelect }: DistantUniverseOrbProps) {
   const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const router = useRouter()
@@ -109,7 +111,11 @@ function DistantUniverseOrb({ universe, isTop10 }: DistantUniverseOrbProps) {
         }}
         onClick={(e) => {
           e.stopPropagation()
-          router.push(`/universe/${universe.username}`)
+          if (cockpitMode && onTargetSelect) {
+            onTargetSelect(universe.username)
+          } else {
+            router.push(`/universe/${universe.username}`)
+          }
         }}
       >
         <meshStandardMaterial
@@ -169,9 +175,11 @@ function DistantUniverseOrb({ universe, isTop10 }: DistantUniverseOrbProps) {
 interface DistantUniversesProps {
   universes: StoredUniverse[]
   top10Usernames: string[]
+  cockpitMode?: boolean
+  onTargetSelect?: (username: string) => void
 }
 
-export function DistantUniverses({ universes, top10Usernames }: DistantUniversesProps) {
+export function DistantUniverses({ universes, top10Usernames, cockpitMode, onTargetSelect }: DistantUniversesProps) {
   return (
     <>
       {universes.map((u) => (
@@ -179,6 +187,8 @@ export function DistantUniverses({ universes, top10Usernames }: DistantUniverses
           key={u.id || u.username}
           universe={u}
           isTop10={top10Usernames.includes(u.username)}
+          cockpitMode={cockpitMode}
+          onTargetSelect={onTargetSelect}
         />
       ))}
     </>
