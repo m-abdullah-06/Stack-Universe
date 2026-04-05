@@ -12,6 +12,14 @@ export function useKeyboard() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLElement &&
+        (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+      ) {
+        return
+      }
+
       // Prevent browser default behavior for flight keys (Space, Ctrl, Arrows, WASD)
       const flightKeys = ['Space', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
       if (flightKeys.includes(e.code)) {
@@ -47,6 +55,14 @@ export function useKeyboard() {
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLElement &&
+        (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+      ) {
+        return
+      }
+
       switch (e.code) {
         case 'KeyW':
         case 'ArrowUp':
