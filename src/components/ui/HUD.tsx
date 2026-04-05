@@ -11,11 +11,11 @@ import { AmbientAudio } from './AmbientAudio'
 
 interface HUDProps {
   data: UniverseData
-  cockpitMode: boolean
-  setCockpitMode: (val: boolean) => void
+  cockpitMode?: boolean
+  setCockpitMode?: (val: boolean) => void
 }
 
-export function HUD({ data, cockpitMode, setCockpitMode }: HUDProps) {
+export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
   const router = useRouter()
   const { data: session } = useSession()
   const { 
@@ -115,17 +115,19 @@ export function HUD({ data, cockpitMode, setCockpitMode }: HUDProps) {
               <button onClick={() => router.push('/')} className="p-1.5 text-gray-500 hover:text-white transition-colors" title="Exit">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               </button>
-              <button 
-                onClick={() => setCockpitMode(!cockpitMode)}
-                className={`p-1.5 transition-all ${
-                  cockpitMode 
-                    ? 'text-space-magenta drop-shadow-[0_0_8px_rgba(255,0,110,0.8)]' 
-                    : 'text-gray-500 hover:text-white'
-                }`}
-                title="Enter Starship Cockpit"
-              >
-                🚀
-              </button>
+              {setCockpitMode && (
+                <button 
+                  onClick={() => setCockpitMode(!cockpitMode)}
+                  className={`p-1.5 transition-all ${
+                    cockpitMode 
+                      ? 'text-space-magenta drop-shadow-[0_0_8px_rgba(255,0,110,0.8)]' 
+                      : 'text-gray-500 hover:text-white'
+                  }`}
+                  title="Enter Starship Cockpit"
+                >
+                  🚀
+                </button>
+              )}
               <button onClick={toggleHallOfGiants} className="p-1.5 text-space-gold/70 hover:text-space-gold transition-colors" title="Leaderboard">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
               </button>
@@ -282,18 +284,20 @@ export function HUD({ data, cockpitMode, setCockpitMode }: HUDProps) {
               )}
               <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-space-cyan border-2 border-[#020205] flex items-center justify-center text-[7px] text-black font-bold">✓</div>
               
-              {/* Rocket Toggle Overlay */}
-              <button 
-                onClick={() => setCockpitMode(!cockpitMode)}
-                className={`absolute -top-1 -left-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] transition-all z-20 ${
-                  cockpitMode 
-                    ? 'bg-space-magenta text-white shadow-[0_0_15px_rgba(255,0,110,0.6)] border border-white/20' 
-                    : 'bg-black/80 border border-white/10 text-gray-400 hover:text-white hover:border-space-cyan/50'
-                }`}
-                title="Enter Starship Cockpit"
-              >
-                🚀
-              </button>
+              {/* Rocket Toggle Overlay (Only in Multiverse) */}
+              {setCockpitMode && (
+                <button 
+                  onClick={() => setCockpitMode(!cockpitMode)}
+                  className={`absolute -top-1 -left-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] transition-all z-20 ${
+                    cockpitMode 
+                      ? 'bg-space-magenta text-white shadow-[0_0_15px_rgba(255,0,110,0.6)] border border-white/20' 
+                      : 'bg-black/80 border border-white/10 text-gray-400 hover:text-white hover:border-space-cyan/50'
+                  }`}
+                  title="Enter Starship Cockpit"
+                >
+                  🚀
+                </button>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-orbitron font-bold text-white text-sm truncate">@{data.username}</p>
