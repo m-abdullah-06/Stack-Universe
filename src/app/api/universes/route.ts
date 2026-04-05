@@ -34,7 +34,11 @@ export async function GET() {
   // If map is completely empty, inject ghost universes
   const universes = (!data || data.length === 0) ? GHOST_UNIVERSES : data
 
-  return NextResponse.json({ universes })
+  return NextResponse.json({ universes }, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+    },
+  })
 }
 
 // POST — upsert a visited universe and log activity

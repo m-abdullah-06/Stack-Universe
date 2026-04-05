@@ -70,6 +70,22 @@ export default function UniverseClient() {
         setData(finalData)
         setCurrentUniverse(finalData)
         setClaimData(claimJson.claim || null)
+
+        // Register this universe visit in Supabase (powers the Discovery counter + Live Ticker)
+        fetch('/api/universes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: json.username,
+            universe_score: json.universeScore,
+            total_stars: json.totalStars,
+            total_repos: json.repos.length,
+            language_count: json.languages.length,
+            account_age_years: json.accountAgeYears,
+            visitor_username: loggedInUser || undefined,
+            top_languages: json.languages.slice(0, 5).map(l => l.name),
+          }),
+        }).catch(err => console.warn('[UniverseClient] Failed to register visit:', err))
       } catch (err: unknown) {
         setErrorMsg(err instanceof Error ? err.message : 'Unknown error')
         setLoadState('error')

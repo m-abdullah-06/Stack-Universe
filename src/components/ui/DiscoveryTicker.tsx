@@ -16,7 +16,11 @@ export function DiscoveryTicker() {
   const [activities, setActivities] = useState<Activity[]>([])
 
   useEffect(() => {
-    if (!supabase) return
+    if (!supabase) {
+      console.error('[Ticker] Supabase client is NULL — ticker disabled. Check NEXT_PUBLIC_SUPABASE_URL env var.')
+      return
+    }
+    console.log('[Ticker] Supabase connected, fetching initial activity...')
 
     // 1. Initial fetch of recent activity
     const fetchInitial = async () => {

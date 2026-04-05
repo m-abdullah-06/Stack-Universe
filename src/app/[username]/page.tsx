@@ -73,6 +73,8 @@ export default function UniversePage() {
             total_repos: json.repos.length,
             language_count: json.languages.length,
             account_age_years: json.accountAgeYears,
+            visitor_username: undefined,
+            top_languages: json.languages.slice(0, 5).map((l: any) => l.name),
           }),
         }).catch(console.warn)
       } catch (err: unknown) {

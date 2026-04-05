@@ -23,13 +23,18 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
   const tabId = useRef(Math.random().toString(36).slice(2, 9)).current
 
   useEffect(() => {
-    if (!supabase) return
+    if (!supabase) {
+      console.warn('[Presence] Supabase client is NULL — env vars missing? Multiplayer disabled.')
+      return
+    }
 
     // Ensure the room name is always lowercased to prevent "Room Mismatch" (Gaeron vs gaeron)
     const normalizedRoom = (room || 'unknown').toLowerCase()
     
     // Add the tabId to the payload so Supabase doesn't deduplicate if the same user opens 2 tabs
     const presenceKey = currentUser ? `${currentUser}-${tabId}` : `anon-${tabId}`
+
+    console.log(`[Presence] Connecting to room: ${normalizedRoom} as ${presenceKey}`)
 
     const channel = supabase.channel(`presence:${normalizedRoom}`, {
       config: {
@@ -38,6 +43,19 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
         },
       },
     })
+
+    // Define the broadcast handler HERE so we can clean it up
+    const handleLocalBroadcast = (e: any) => {
+      channel.send({
+        type: 'broadcast',
+        event: 'message',
+        payload: e.detail
+      });
+      // Also show locally
+      window.dispatchEvent(new CustomEvent('universe:shooting_star', { 
+        detail: e.detail 
+      }));
+    };
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -59,20 +77,9 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
         }));
       })
       .subscribe(async (status) => {
+        console.log(`[Presence] Channel status: ${status}`)
         if (status === 'SUBSCRIBED') {
-          // Listen for local broadcast requests from HUD
-          const handleLocalBroadcast = (e: any) => {
-            channel.send({
-              type: 'broadcast',
-              event: 'message',
-              payload: e.detail
-            });
-            // Also show locally
-            window.dispatchEvent(new CustomEvent('universe:shooting_star', { 
-              detail: e.detail 
-            }));
-          };
-          window.addEventListener('universe:broadcast', handleLocalBroadcast);
+          console.log(`[Presence] Connected! Tracking position...`)
           
           await channel.track({
             user: currentUser || 'Traveler',
@@ -82,6 +89,9 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
           })
         }
       })
+
+    // Listen for local broadcast requests from HUD (defined outside subscribe so cleanup works)
+    window.addEventListener('universe:broadcast', handleLocalBroadcast);
 
     // Track mouse and broadcast frequently
     const handleMouseMove = (e: MouseEvent) => {
@@ -100,6 +110,8 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
     window.addEventListener('mousemove', handleMouseMove)
 
     return () => {
+      console.log('[Presence] Cleaning up channel...')
+      window.removeEventListener('universe:broadcast', handleLocalBroadcast)
       window.removeEventListener('mousemove', handleMouseMove)
       clearInterval(interval)
       channel.unsubscribe()
