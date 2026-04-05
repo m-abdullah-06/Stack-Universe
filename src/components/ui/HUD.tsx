@@ -33,6 +33,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
     setShowIdentityPanel,
     showCustomisePanel,
     setShowCustomisePanel,
+    setShowDNAFingerprint,
   } = useUniverseStore()
 
   const isAnyPanelOpen = useIsAnyPanelOpen()
@@ -195,6 +196,10 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
             <button onClick={() => setShowIdentityPanel(true)} className="flex flex-col items-center gap-1 group">
               <span className="text-[14px] group-hover:scale-110 transition-transform">⚙️</span>
               <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">Identity</span>
+            </button>
+            <button onClick={() => setShowDNAFingerprint(true)} className="flex flex-col items-center gap-1 group">
+              <span className="text-[14px] group-hover:scale-110 transition-transform">🧬</span>
+              <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">DNA</span>
             </button>
             <button onClick={() => setShowShareCard(true)} className="flex flex-col items-center gap-1 group">
               <span className="text-[14px] group-hover:scale-110 transition-transform text-space-magenta">⧉</span>
@@ -470,6 +475,13 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               whileTap={{ scale: 0.99 }}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/[0.03] border border-space-cyan/20 transition-colors font-orbitron text-[9px] text-space-cyan uppercase tracking-wider">
               <span className="text-xs">⚙️</span> DIAGNOSE IDENTITY
+            </motion.button>
+            <motion.button 
+              onClick={() => setShowDNAFingerprint(true)}
+              whileHover={{ scale: 1.01, backgroundColor: 'rgba(124,58,237,0.1)' }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/[0.03] border border-purple-500/30 transition-colors font-orbitron text-[9px] text-purple-400 uppercase tracking-wider">
+              <span className="text-xs">🧬</span> MY TECH DNA
             </motion.button>
 
             {/* Action Buttons (Relocated) */}

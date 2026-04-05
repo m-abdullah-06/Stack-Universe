@@ -14,6 +14,8 @@ import { RepoSummaryHUD } from '@/components/ui/RepoSummaryHUD'
 import { NarratorPanel } from '@/components/ui/NarratorPanel'
 import { RoastPanel } from '@/components/ui/RoastPanel'
 import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
+import { IdentityPanel } from '@/components/ui/IdentityPanel'
+import { DNAFingerprint } from '@/components/ui/DNAFingerprint'
 import { useUniverseStore } from '@/store'
 import { useSession } from 'next-auth/react'
 import { SpaceshipPresence } from '@/components/multiplayer/SpaceshipPresence'
@@ -184,6 +186,8 @@ export default function UniversePage() {
           <CustomisePanel data={data} />
           <HallOfGiants />
           <ShareCard data={data} />
+          <IdentityPanel data={data} />
+          <DNAFingerprint data={data} />
         </motion.div>
       )}
 

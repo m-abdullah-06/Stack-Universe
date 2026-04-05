@@ -57,6 +57,9 @@ interface UniverseStore {
 
   showCustomisePanel: boolean
   setShowCustomisePanel: (v: boolean) => void
+
+  showDNAFingerprint: boolean
+  setShowDNAFingerprint: (v: boolean) => void
 }
 
 export const useUniverseStore = create<UniverseStore>((set) => ({
@@ -115,6 +118,9 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
 
   showCustomisePanel: false,
   setShowCustomisePanel: (v) => set({ showCustomisePanel: v }),
+
+  showDNAFingerprint: false,
+  setShowDNAFingerprint: (v) => set({ showDNAFingerprint: v }),
 }))
 
 export const useIsAnyPanelOpen = () => {
@@ -125,6 +131,7 @@ export const useIsAnyPanelOpen = () => {
     s.showRoast || 
     s.showHoroscope || 
     s.showIdentityPanel ||
-    s.showCustomisePanel
+    s.showCustomisePanel ||
+    s.showDNAFingerprint
   )
 }
