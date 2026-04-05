@@ -10,7 +10,7 @@ interface NarratorPanelProps {
 }
 
 export function NarratorPanel({ data }: NarratorPanelProps) {
-  const { showNarrator, setShowNarrator } = useUniverseStore()
+  const setActivePanel = useUniverseStore(s => s.setActivePanel)
   const [displayWords, setDisplayWords] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [complete, setComplete] = useState(false)
@@ -76,7 +76,7 @@ export function NarratorPanel({ data }: NarratorPanelProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={(e) => { if (e.target === e.currentTarget) setShowNarrator(false) }}
+      onClick={(e) => { if (e.target === e.currentTarget) setActivePanel(null) }}
     >
       <motion.div
         className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-black/80 backdrop-blur-2xl border border-white/10 rounded-t-3xl md:rounded-3xl p-5 md:p-8 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative overflow-x-hidden"
@@ -146,7 +146,7 @@ export function NarratorPanel({ data }: NarratorPanelProps) {
               </motion.button>
             )}
             <button
-              onClick={() => setShowNarrator(false)}
+              onClick={() => setActivePanel(null)}
               className="px-8 py-3 rounded-full border border-white/10 text-gray-400 font-orbitron font-bold text-[10px] tracking-widest hover:text-white hover:border-white/30 transition-all uppercase"
             >
               Close

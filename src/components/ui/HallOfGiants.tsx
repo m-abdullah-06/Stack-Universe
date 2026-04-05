@@ -10,7 +10,7 @@ const RANK_COLORS = ['#ffd700', '#c0c0c0', '#cd7f32']
 const RANK_LABELS = ['TITAN', 'GIANT', 'GIANT']
 
 export function HallOfGiants() {
-  const { showHallOfGiants, toggleHallOfGiants, leaderboard, setLeaderboard } =
+  const { leaderboard, setLeaderboard, setActivePanel } =
     useUniverseStore()
   const [loading, setLoading] = useState(false)
   const [source, setSource] = useState<'db' | 'github' | null>(null)
@@ -36,7 +36,7 @@ export function HallOfGiants() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={toggleHallOfGiants}
+        onClick={() => setActivePanel(null)}
       />
 
       {/* Panel — Mobile: bottom sheet, Desktop: side card */}
@@ -68,7 +68,7 @@ export function HallOfGiants() {
             </p>
           </div>
           <button
-            onClick={toggleHallOfGiants}
+            onClick={() => setActivePanel(null)}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all text-sm"
           >
             ✕
@@ -119,7 +119,7 @@ export function HallOfGiants() {
                 transition={{ delay: i * 0.04 }}
                 onClick={(e) => {
                   e.preventDefault()
-                  toggleHallOfGiants()
+                  setActivePanel(null)
                   router.push(`/universe/${entry.username}`)
                 }}
               >

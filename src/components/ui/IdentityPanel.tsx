@@ -15,12 +15,10 @@ interface Personality {
 }
 
 export function IdentityPanel({ data }: IdentityPanelProps) {
-  const {
-    showIdentityPanel,
-    setShowIdentityPanel,
-    identityObservations,
-    setIdentityObservations,
-  } = useUniverseStore();
+  const activePanel = useUniverseStore(s => s.activePanel);
+  const setActivePanel = useUniverseStore(s => s.setActivePanel);
+  const identityObservations = useUniverseStore(s => s.identityObservations);
+  const setIdentityObservations = useUniverseStore(s => s.setIdentityObservations);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -54,10 +52,10 @@ export function IdentityPanel({ data }: IdentityPanelProps) {
   }, [data, setIdentityObservations]);
 
   useEffect(() => {
-    if (showIdentityPanel && identityObservations.length === 0) {
+    if (activePanel === 'identity' && identityObservations.length === 0) {
       fetchIdentity();
     }
-  }, [showIdentityPanel, identityObservations, fetchIdentity]);
+  }, [activePanel, identityObservations, fetchIdentity]);
 
   return (
     <motion.div
@@ -66,7 +64,7 @@ export function IdentityPanel({ data }: IdentityPanelProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) setShowIdentityPanel(false);
+        if (e.target === e.currentTarget) setActivePanel(null);
       }}
     >
       <motion.div
@@ -104,7 +102,7 @@ export function IdentityPanel({ data }: IdentityPanelProps) {
               </div>
             </div>
             <button
-              onClick={() => setShowIdentityPanel(false)}
+              onClick={() => setActivePanel(null)}
               className="p-2 md:p-3 text-gray-500 hover:text-white transition-colors"
             >
               <svg

@@ -10,7 +10,7 @@ interface RoastPanelProps {
 }
 
 export function RoastPanel({ data }: RoastPanelProps) {
-  const { showRoast, setShowRoast } = useUniverseStore()
+  const setActivePanel = useUniverseStore(s => s.setActivePanel)
   const [roast, setRoast] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -59,7 +59,7 @@ export function RoastPanel({ data }: RoastPanelProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={(e) => { if (e.target === e.currentTarget) setShowRoast(false) }}
+      onClick={(e) => { if (e.target === e.currentTarget) setActivePanel(null) }}
     >
       <motion.div
         className="w-full max-w-xl max-h-[85vh] overflow-y-auto bg-black/90 backdrop-blur-2xl border-2 border-orange-500/50 rounded-t-3xl md:rounded-3xl p-5 md:p-8 shadow-[0_0_80px_rgba(249,115,22,0.3)] relative overflow-x-hidden"
@@ -127,7 +127,7 @@ export function RoastPanel({ data }: RoastPanelProps) {
               </button>
             )}
             <button
-              onClick={() => setShowRoast(false)}
+              onClick={() => setActivePanel(null)}
               className="px-8 py-3 rounded-full border border-orange-500/20 text-orange-500/70 font-orbitron font-bold text-[10px] tracking-widest hover:text-white hover:border-orange-500/50 transition-all uppercase"
             >
               Exit

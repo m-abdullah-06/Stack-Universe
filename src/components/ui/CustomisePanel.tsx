@@ -19,7 +19,7 @@ interface CustomisePanelProps {
 }
 
 export function CustomisePanel({ data }: CustomisePanelProps) {
-  const { claimData, setClaimData, showCustomisePanel, setShowCustomisePanel } = useUniverseStore()
+  const { claimData, setClaimData, setActivePanel } = useUniverseStore()
   const [isSaving, setIsSaving] = useState(false)
   const isAnyPanelOpen = useIsAnyPanelOpen()
 
@@ -53,7 +53,7 @@ export function CustomisePanel({ data }: CustomisePanelProps) {
     >
       <div className="flex items-center justify-between mb-8">
         <h3 className="font-orbitron font-bold text-lg text-white tracking-widest">CUSTOMISE</h3>
-        <button onClick={() => setShowCustomisePanel(false)} className="text-gray-500 hover:text-white">✕</button>
+        <button onClick={() => setActivePanel(null)} className="text-gray-500 hover:text-white">✕</button>
       </div>
 
       <div className="space-y-8">

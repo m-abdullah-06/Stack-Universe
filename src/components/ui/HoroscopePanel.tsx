@@ -10,7 +10,7 @@ interface HoroscopePanelProps {
 }
 
 export function HoroscopePanel({ data }: HoroscopePanelProps) {
-  const { showHoroscope, setShowHoroscope } = useUniverseStore()
+  const setActivePanel = useUniverseStore(s => s.setActivePanel)
   const [horoscope, setHoroscope] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -59,7 +59,7 @@ export function HoroscopePanel({ data }: HoroscopePanelProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={(e) => { if (e.target === e.currentTarget) setShowHoroscope(false) }}
+      onClick={(e) => { if (e.target === e.currentTarget) setActivePanel(null) }}
     >
       <motion.div
         className="w-full max-w-xl max-h-[85vh] overflow-y-auto bg-black/90 backdrop-blur-2xl border border-purple-500/30 rounded-t-3xl md:rounded-3xl p-6 md:p-10 shadow-[0_0_100px_rgba(168,85,247,0.2)] relative overflow-x-hidden text-center"
@@ -142,7 +142,7 @@ export function HoroscopePanel({ data }: HoroscopePanelProps) {
               </button>
             )}
             <button
-              onClick={() => setShowHoroscope(false)}
+              onClick={() => setActivePanel(null)}
               className="px-8 py-3 rounded-full border border-purple-500/20 text-gray-500 font-orbitron font-bold text-[10px] tracking-widest hover:text-white hover:border-purple-500/50 transition-all uppercase"
             >
               Close

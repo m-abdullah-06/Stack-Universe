@@ -10,7 +10,9 @@ interface DNAFingerprintProps {
 }
 
 export function DNAFingerprint({ data }: DNAFingerprintProps) {
-  const { showDNAFingerprint, setShowDNAFingerprint } = useUniverseStore()
+  const activePanel = useUniverseStore(s => s.activePanel)
+  const setActivePanel = useUniverseStore(s => s.setActivePanel)
+  const showDNAFingerprint = activePanel === 'dna'
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -181,7 +183,7 @@ export function DNAFingerprint({ data }: DNAFingerprintProps) {
       exit={{ opacity: 0 }}
       style={{ pointerEvents: 'auto' }}
       className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-8 bg-black/95 backdrop-blur-2xl"
-      onClick={() => setShowDNAFingerprint(false)}
+      onClick={() => setActivePanel(null)}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
@@ -198,7 +200,7 @@ export function DNAFingerprint({ data }: DNAFingerprintProps) {
             <p className="font-mono text-[10px] text-space-cyan tracking-widest uppercase">Biometric Signature // @{data.username}</p>
           </div>
           <button 
-            onClick={() => setShowDNAFingerprint(false)}
+            onClick={() => setActivePanel(null)}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
           >
             ✕

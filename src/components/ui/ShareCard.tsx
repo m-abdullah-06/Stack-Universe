@@ -11,7 +11,7 @@ interface ShareCardProps {
 }
 
 export function ShareCard({ data }: ShareCardProps) {
-  const { showShareCard, setShowShareCard } = useUniverseStore();
+  const setActivePanel = useUniverseStore(s => s.setActivePanel);
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
@@ -60,7 +60,7 @@ export function ShareCard({ data }: ShareCardProps) {
     }
   };
 
-  if (!showShareCard) return null;
+
 
   return (
     <motion.div
@@ -68,7 +68,7 @@ export function ShareCard({ data }: ShareCardProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={() => setShowShareCard(false)}
+      onClick={() => setActivePanel(null)}
     >
       <motion.div
         className="flex flex-col items-center gap-3 w-full max-w-sm px-4 md:px-0 max-h-[80vh]"
@@ -311,7 +311,7 @@ export function ShareCard({ data }: ShareCardProps) {
           </div>
 
           <button
-            onClick={() => setShowShareCard(false)}
+            onClick={() => setActivePanel(null)}
             className="font-mono text-[9px] text-gray-500 hover:text-white transition-colors tracking-widest uppercase py-1 mt-auto"
           >
             [ Close ]

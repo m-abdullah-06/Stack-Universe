@@ -34,27 +34,20 @@ export default function UniversePage() {
   const setClaimData = useUniverseStore(s => s.setClaimData)
   const closeAllPanels = useUniverseStore(s => s.closeAllPanels)
   const claimData = useUniverseStore(s => s.claimData)
-  const showIdentityPanel = useUniverseStore(s => s.showIdentityPanel)
-  const showDNAFingerprint = useUniverseStore(s => s.showDNAFingerprint)
-  const showHallOfGiants = useUniverseStore(s => s.showHallOfGiants)
-  const showShareCard = useUniverseStore(s => s.showShareCard)
-  const showNarrator = useUniverseStore(s => s.showNarrator)
-  const showRoast = useUniverseStore(s => s.showRoast)
-  const showHoroscope = useUniverseStore(s => s.showHoroscope)
-  const showCustomisePanel = useUniverseStore(s => s.showCustomisePanel)
+  const activePanel = useUniverseStore(s => s.activePanel)
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
 
-  // Fetch universe data in background while cinematic plays
+  // Dedicated immediate reset effect
+  useEffect(() => {
+    closeAllPanels()
+    setClaimData(null)
+  }, [username, closeAllPanels, setClaimData])
+
+  // Data fetching effect
   useEffect(() => {
     if (!username) return
-
-    // Strictly ensure all panels are closed when entering a new solar system
-    closeAllPanels()
-    
-    // Immediately clear previous user's claim data from global store
-    setClaimData(null)
 
     const fetchData = async () => {
       try {
@@ -196,14 +189,14 @@ export default function UniversePage() {
           <RepoSummaryHUD />
           
           <AnimatePresence>
-            {showNarrator && <NarratorPanel data={data} />}
-            {showRoast && <RoastPanel data={data} />}
-            {showHoroscope && <HoroscopePanel data={data} />}
-            {showCustomisePanel && <CustomisePanel data={data} />}
-            {showHallOfGiants && <HallOfGiants />}
-            {showShareCard && <ShareCard data={data} />}
-            {showIdentityPanel && <IdentityPanel data={data} />}
-            {showDNAFingerprint && <DNAFingerprint data={data} />}
+            {activePanel === 'narrator' && <NarratorPanel data={data} />}
+            {activePanel === 'roast' && <RoastPanel data={data} />}
+            {activePanel === 'horoscope' && <HoroscopePanel data={data} />}
+            {activePanel === 'customise' && <CustomisePanel data={data} />}
+            {activePanel === 'giants' && <HallOfGiants />}
+            {activePanel === 'share' && <ShareCard data={data} />}
+            {activePanel === 'identity' && <IdentityPanel data={data} />}
+            {activePanel === 'dna' && <DNAFingerprint data={data} />}
           </AnimatePresence>
         </motion.div>
       )}
