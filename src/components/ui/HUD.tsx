@@ -86,7 +86,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
       {/* ─── HUD: Mobile = Top Bar, Desktop = Side Card ─────────── */}
       <motion.div
         className={`fixed z-[100] luxe-glass
-                    top-0 left-0 right-0 border-b border-white/10
+                    top-16 left-0 right-0 border-b border-white/10
                     md:top-8 md:left-8 md:right-auto md:bottom-auto md:w-80 md:rounded-xl md:border md:border-white/10 hud-corner
                     transition-all duration-500
                     ${isAnyPanelOpen ? 'max-md:-translate-y-full md:opacity-40 md:pointer-events-none' : 'translate-y-0 opacity-100'}`}
@@ -274,7 +274,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
         </div>
 
         {/* ── DESKTOP LAYOUT (md+) ── */}
-        <div className="hidden md:block p-4 space-y-3">
+        <div className="hidden md:block p-4 space-y-3 max-h-[calc(100vh-80px)] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
           {/* Identity */}
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0 group">

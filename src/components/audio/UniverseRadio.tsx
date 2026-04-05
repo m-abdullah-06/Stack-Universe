@@ -85,7 +85,7 @@ export function UniverseRadio({ score, languages, isOwner }: UniverseRadioProps)
   }
 
   return (
-    <div className="fixed bottom-32 right-8 z-[70] flex flex-col items-end gap-3 pointer-events-auto">
+    <div className="fixed bottom-14 left-4 md:bottom-14 md:left-auto md:right-8 z-[70] flex flex-col items-start md:items-end gap-3 pointer-events-auto max-w-[200px] md:max-w-none">
       <AnimatePresence>
         {isPlaying && (
           <motion.div
