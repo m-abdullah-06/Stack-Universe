@@ -15,11 +15,14 @@ import { NarratorPanel } from '@/components/ui/NarratorPanel'
 import { RoastPanel } from '@/components/ui/RoastPanel'
 import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
 import { useUniverseStore } from '@/store'
+import { useSession } from 'next-auth/react'
+import { SpaceshipPresence } from '@/components/multiplayer/SpaceshipPresence'
 import type { UniverseData } from '@/types'
 
 type LoadState = 'cinematic' | 'loading' | 'ready' | 'error'
 
 export default function UniversePage() {
+  const { data: session } = useSession()
   const params = useParams()
   const router = useRouter()
   const rawUsername = params?.username as string
@@ -172,6 +175,7 @@ export default function UniversePage() {
         >
           <SolarSystemScene data={data} />
           <HUD data={data} />
+          <SpaceshipPresence room={username.toLowerCase()} currentUser={session?.user?.name || null} />
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
           <NarratorPanel data={data} />

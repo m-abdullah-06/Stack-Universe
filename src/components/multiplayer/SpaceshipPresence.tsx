@@ -161,8 +161,8 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
   return (
     <>
       {/* ── Pilot Radar (Safe Zone) ── */}
-      <div className="fixed bottom-14 right-3 md:top-4 md:bottom-auto md:left-4 md:right-auto z-[80] pointer-events-auto">
-        <div className="bg-black/70 backdrop-blur-xl rounded-lg border border-white/10 px-3 py-2 flex items-center gap-3">
+      <div className="fixed bottom-14 right-3 md:top-8 md:bottom-auto md:right-8 md:left-auto z-[120] pointer-events-auto">
+        <div className="bg-black/70 backdrop-blur-xl rounded-lg border border-white/10 px-3 py-2 flex items-center gap-3 shadow-[0_0_20px_rgba(0,0,0,0.8)]">
           <div className="relative">
             <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-40" />
@@ -219,7 +219,7 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed bottom-28 right-3 md:top-16 md:bottom-auto md:left-4 md:right-auto z-[80] w-[280px] md:w-[320px] pointer-events-auto"
+            className="fixed bottom-28 right-3 md:top-24 md:bottom-auto md:right-8 md:left-auto z-[120] w-[280px] md:w-[320px] pointer-events-auto"
           >
             <div className="bg-black/80 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
               {/* Header */}
