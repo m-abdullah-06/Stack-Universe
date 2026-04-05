@@ -63,7 +63,7 @@ export function IdentityPanel({ data }: IdentityPanelProps) {
     <AnimatePresence>
       {showIdentityPanel && (
         <motion.div
-          className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-space-dark/40 backdrop-blur-xl"
+          className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-space-dark/40 backdrop-blur-xl"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
