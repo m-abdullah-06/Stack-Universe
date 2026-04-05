@@ -60,6 +60,8 @@ interface UniverseStore {
 
   showDNAFingerprint: boolean
   setShowDNAFingerprint: (v: boolean) => void
+
+  closeAllPanels: () => void
 }
 
 export const useUniverseStore = create<UniverseStore>((set) => ({
@@ -120,7 +122,27 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   setShowCustomisePanel: (v) => set({ showCustomisePanel: v }),
 
   showDNAFingerprint: false,
-  setShowDNAFingerprint: (v) => set({ showDNAFingerprint: v }),
+  setShowDNAFingerprint: (v) => set({ 
+    showDNAFingerprint: v,
+    showHallOfGiants: false,
+    showShareCard: false,
+    showNarrator: false,
+    showRoast: false,
+    showHoroscope: false,
+    showIdentityPanel: false,
+    showCustomisePanel: false
+  }),
+
+  closeAllPanels: () => set({
+    showHallOfGiants: false,
+    showShareCard: false,
+    showNarrator: false,
+    showRoast: false,
+    showHoroscope: false,
+    showIdentityPanel: false,
+    showCustomisePanel: false,
+    showDNAFingerprint: false
+  }),
 }))
 
 export const useIsAnyPanelOpen = () => {

@@ -30,7 +30,19 @@ export default function UniversePage() {
   const rawUsername = params?.username as string
   const username = rawUsername?.replace(/^@/, '')?.toLowerCase()
 
-  const { setCurrentUniverse, setClaimData, claimData } = useUniverseStore()
+  const { 
+    setCurrentUniverse, 
+    setClaimData, 
+    claimData,
+    showIdentityPanel,
+    showDNAFingerprint,
+    showHallOfGiants,
+    showShareCard,
+    showNarrator,
+    showRoast,
+    showHoroscope,
+    showCustomisePanel
+  } = useUniverseStore()
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
@@ -180,14 +192,17 @@ export default function UniversePage() {
           <SpaceshipPresence room={username.toLowerCase()} currentUser={session?.user?.name || null} />
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
-          <NarratorPanel data={data} />
-          <RoastPanel data={data} />
-          <HoroscopePanel data={data} />
-          <CustomisePanel data={data} />
-          <HallOfGiants />
-          <ShareCard data={data} />
-          <IdentityPanel data={data} />
-          <DNAFingerprint data={data} />
+          
+          <AnimatePresence>
+            {showNarrator && <NarratorPanel data={data} />}
+            {showRoast && <RoastPanel data={data} />}
+            {showHoroscope && <HoroscopePanel data={data} />}
+            {showCustomisePanel && <CustomisePanel data={data} />}
+            {showHallOfGiants && <HallOfGiants />}
+            {showShareCard && <ShareCard data={data} />}
+            {showIdentityPanel && <IdentityPanel data={data} />}
+            {showDNAFingerprint && <DNAFingerprint data={data} />}
+          </AnimatePresence>
         </motion.div>
       )}
 

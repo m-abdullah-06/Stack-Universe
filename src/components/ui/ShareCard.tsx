@@ -63,26 +63,25 @@ export function ShareCard({ data }: ShareCardProps) {
   if (!showShareCard) return null;
 
   return (
-    <AnimatePresence>
+    <motion.div
+      className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={() => setShowShareCard(false)}
+    >
       <motion.div
-        className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => setShowShareCard(false)}
+        className="flex flex-col items-center gap-3 w-full max-w-sm px-4 md:px-0 max-h-[80vh]"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <motion.div
-          className="flex flex-col items-center gap-3 w-full max-w-sm px-4 md:px-0 max-h-[80vh]"
-          initial={{ scale: 0.9, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Scrollable Container */}
-          <div className="w-full overflow-y-auto custom-scrollbar flex flex-col items-center gap-3 pr-1 py-2">
-            {/* The card */}
-            <div
-              ref={cardRef}
-              className="w-full md:w-96 p-3 md:p-6 rounded-lg relative overflow-hidden flex-shrink-0"
+        {/* Scrollable Container */}
+        <div className="w-full overflow-y-auto custom-scrollbar flex flex-col items-center gap-3 pr-1 py-2">
+          {/* The card */}
+          <div
+            ref={cardRef}
+            className="w-full md:w-96 p-3 md:p-6 rounded-lg relative overflow-hidden flex-shrink-0"
             style={{
               background:
                 "linear-gradient(135deg, #000008 0%, #00000f 50%, #050010 100%)",
@@ -318,7 +317,6 @@ export function ShareCard({ data }: ShareCardProps) {
             [ Close ]
           </button>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+    </motion.div>
   );
 }

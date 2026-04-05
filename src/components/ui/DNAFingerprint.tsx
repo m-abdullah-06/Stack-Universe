@@ -175,68 +175,64 @@ export function DNAFingerprint({ data }: DNAFingerprintProps) {
   }
 
   return (
-    <AnimatePresence>
-      {showDNAFingerprint && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{ pointerEvents: 'auto' }}
-          className="fixed inset-0 z-[300] flex items-center justify-center p-4 md:p-8 bg-black/95 backdrop-blur-2xl"
-          onClick={() => setShowDNAFingerprint(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-4xl h-full max-h-[85vh] flex flex-col items-center bg-black border border-white/20 rounded-3xl overflow-hidden shadow-2xl"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{ pointerEvents: 'auto' }}
+      className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-8 bg-black/95 backdrop-blur-2xl"
+      onClick={() => setShowDNAFingerprint(false)}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-4xl h-full max-h-[85vh] flex flex-col items-center bg-black border border-white/20 rounded-3xl overflow-hidden shadow-2xl"
+      >
+        
+        {/* Header */}
+        <div className="w-full flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
+          <div>
+            <h2 className="font-orbitron text-xl md:text-2xl font-black text-white tracking-[0.2em] uppercase">Tech Stack DNA</h2>
+            <p className="font-mono text-[10px] text-space-cyan tracking-widest uppercase">Biometric Signature // @{data.username}</p>
+          </div>
+          <button 
+            onClick={() => setShowDNAFingerprint(false)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
           >
-            
-            {/* Header */}
-            <div className="w-full flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
-              <div>
-                <h2 className="font-orbitron text-xl md:text-2xl font-black text-white tracking-[0.2em] uppercase">Tech Stack DNA</h2>
-                <p className="font-mono text-[10px] text-space-cyan tracking-widest uppercase">Biometric Signature // @{data.username}</p>
-              </div>
-              <button 
-                onClick={() => setShowDNAFingerprint(false)}
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
-              >
-                ✕
-              </button>
-            </div>
+            ✕
+          </button>
+        </div>
 
-            {/* Canvas Container */}
-            <div ref={containerRef} className="flex-1 w-full relative bg-gradient-to-b from-black to-[#050510] overflow-hidden">
-              <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
-              
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center pointer-events-none w-full px-4">
-                <p className="font-mono text-[9px] text-white/30 uppercase tracking-[0.3em]">
-                  Unique Genomic visualization based on language registry
-                </p>
-              </div>
-            </div>
+        {/* Canvas Container */}
+        <div ref={containerRef} className="flex-1 w-full relative bg-gradient-to-b from-black to-[#050510] overflow-hidden">
+          <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
+          
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center pointer-events-none w-full px-4">
+            <p className="font-mono text-[9px] text-white/30 uppercase tracking-[0.3em]">
+              Unique Genomic visualization based on language registry
+            </p>
+          </div>
+        </div>
 
-            {/* Actions */}
-            <div className="w-full p-6 flex flex-col md:flex-row gap-4 border-t border-white/10 bg-black/80">
-              <button 
-                onClick={handleDownload}
-                disabled={isExporting}
-                className="flex-1 bg-white text-black font-orbitron font-bold py-4 rounded-xl hover:bg-space-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isExporting ? 'GENERATING...' : '📥 DOWNLOAD PNG'}
-              </button>
-              <button 
-                onClick={handleShareTwitter}
-                className="flex-1 bg-white/[0.05] border border-white/10 text-white font-orbitron font-bold py-4 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-              >
-                𝕏 SHARE TO WORLD
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {/* Actions */}
+        <div className="w-full p-6 flex flex-col md:flex-row gap-4 border-t border-white/10 bg-black/80">
+          <button 
+            onClick={handleDownload}
+            disabled={isExporting}
+            className="flex-1 bg-white text-black font-orbitron font-bold py-4 rounded-xl hover:bg-space-cyan transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isExporting ? 'GENERATING...' : '📥 DOWNLOAD PNG'}
+          </button>
+          <button 
+            onClick={handleShareTwitter}
+            className="flex-1 bg-white/[0.05] border border-white/10 text-white font-orbitron font-bold py-4 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+          >
+            𝕏 SHARE TO WORLD
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }
