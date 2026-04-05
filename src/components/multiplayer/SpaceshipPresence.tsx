@@ -49,6 +49,7 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
 
     const channel = supabase.channel(`presence:${normalizedRoom}`, {
       config: {
+        broadcast: { ack: false },
         presence: {
           key: presenceKey,
         },
@@ -56,7 +57,7 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
     })
 
     // Broadcast handler — adds to chat panel
-    const handleLocalBroadcast = (e: any) => {
+    const handleLocalBroadcast = async (e: any) => {
       const msg: ChatMessage = {
         id: Math.random().toString(36).slice(2),
         user: e.detail.user,

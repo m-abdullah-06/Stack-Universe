@@ -270,6 +270,34 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Broadcast Box (Mobile) */}
+            <div className="relative group mt-2">
+              <input 
+                type="text" 
+                maxLength={40}
+                placeholder="Broadcast a signal..."
+                className="w-full bg-white/[0.03] border border-white/10 rounded-full py-2 pl-3 pr-10 font-mono text-[9px] text-space-cyan placeholder:text-gray-700 focus:outline-none focus:border-space-cyan/40 transition-all"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const val = e.currentTarget.value;
+                    if (!val.trim()) return;
+                    
+                    window.dispatchEvent(new CustomEvent('universe:broadcast', { 
+                      detail: { text: val, user: session?.user?.name || 'Traveler' } 
+                    }));
+                    
+                    e.currentTarget.value = '';
+                    setQueryFeedback('Transmitted');
+                    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+                    feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 3000);
+                  }
+                }}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-30 group-focus-within:opacity-100 transition-opacity">
+                ↵
+              </div>
+            </div>
           </div>
         </div>
 
