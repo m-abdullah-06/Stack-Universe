@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+// Ghost Universes data for when DB is empty
+const GHOST_UNIVERSES = [
+  { id: '1', username: 'gaearon', universe_score: 95000, total_stars: 45000, position_x: -200, position_y: 50, position_z: -300, top_languages: ['JavaScript', 'TypeScript'] },
+  { id: '2', username: 'torvalds', universe_score: 120000, total_stars: 100000, position_x: 300, position_y: -100, position_z: 150, top_languages: ['C', 'Shell'] },
+  { id: '3', username: 'tj', universe_score: 85000, total_stars: 38000, position_x: -150, position_y: 120, position_z: 400, top_languages: ['JavaScript', 'Go'] },
+  { id: '4', username: 'yyx990803', universe_score: 92000, total_stars: 50000, position_x: 450, position_y: -20, position_z: -250, top_languages: ['TypeScript', 'Vue'] },
+  { id: '5', username: 'sindresorhus', universe_score: 110000, total_stars: 80000, position_x: 50, position_y: 200, position_z: -100, top_languages: ['JavaScript', 'TypeScript'] }
+]
+
 // GET all stored universes (for the multiverse background)
 export async function GET() {
   const client = supabase
   if (!client) {
-    return NextResponse.json({ universes: [] })
+    return NextResponse.json({ universes: GHOST_UNIVERSES })
   }
 
   const { data, error } = await client
@@ -16,10 +28,13 @@ export async function GET() {
 
   if (error) {
     console.error('Supabase GET error:', error)
-    return NextResponse.json({ universes: [] })
+    return NextResponse.json({ universes: GHOST_UNIVERSES })
   }
 
-  return NextResponse.json({ universes: data || [] })
+  // If map is completely empty, inject ghost universes
+  const universes = (!data || data.length === 0) ? GHOST_UNIVERSES : data
+
+  return NextResponse.json({ universes })
 }
 
 // POST — upsert a visited universe and log activity

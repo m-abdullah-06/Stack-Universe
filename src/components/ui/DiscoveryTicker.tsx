@@ -52,14 +52,36 @@ export function DiscoveryTicker() {
           })
         }
       )
-      .subscribe()
+      .subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Ticker] Live discovery feed connected (SUBSCRIBED)')
+        }
+      })
 
     return () => {
       client.removeChannel(channel)
     }
   }, [])
 
-  if (activities.length === 0) return null
+  // If no activities yet, show a scanning heartbeat
+  if (activities.length === 0) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-[100] h-8 bg-black/60 backdrop-blur-md border-t border-white/10 flex items-center overflow-hidden pointer-events-none">
+        <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-black/80 to-transparent z-10 flex items-center pl-4">
+          <span className="text-[8px] font-orbitron font-bold text-space-cyan tracking-widest animate-pulse">LIVE FEED</span>
+        </div>
+        <div className="flex gap-8 whitespace-nowrap px-24">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            className="flex items-center gap-2"
+          >
+            <span className="text-[10px] font-mono text-space-cyan animate-pulse">📡 SCANNING DEEP SPACE FOR DISCOVERIES...</span>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] h-8 bg-black/60 backdrop-blur-md border-t border-white/10 flex items-center overflow-hidden pointer-events-none">

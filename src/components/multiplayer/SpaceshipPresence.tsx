@@ -19,14 +19,22 @@ interface SpaceshipPresenceProps {
 export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps) {
   const [others, setOthers] = useState<Record<string, PresenceState>>({})
   const mousePos = useRef({ x: 0, y: 0 })
+  // Generate a unique Session ID for THIS specific browser tab
+  const tabId = useRef(Math.random().toString(36).slice(2, 9)).current
 
   useEffect(() => {
     if (!supabase) return
 
-    const channel = supabase.channel(`presence:${room}`, {
+    // Ensure the room name is always lowercased to prevent "Room Mismatch" (Gaeron vs gaeron)
+    const normalizedRoom = (room || 'unknown').toLowerCase()
+    
+    // Add the tabId to the payload so Supabase doesn't deduplicate if the same user opens 2 tabs
+    const presenceKey = currentUser ? `${currentUser}-${tabId}` : `anon-${tabId}`
+
+    const channel = supabase.channel(`presence:${normalizedRoom}`, {
       config: {
         presence: {
-          key: currentUser || `anon-${Math.random().toString(36).slice(2, 7)}`,
+          key: presenceKey,
         },
       },
     })
@@ -37,7 +45,8 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
         const newOthers: Record<string, PresenceState> = {}
         
         for (const key in state) {
-          if (key === currentUser) continue
+          // Don't show our own tab's ship!
+          if (key === presenceKey) continue
           const p = state[key][0]
           if (p) newOthers[key] = p
         }
@@ -95,10 +104,20 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
       clearInterval(interval)
       channel.unsubscribe()
     }
-  }, [room, currentUser])
+  }, [room, currentUser, tabId])
+
+  const pilotCount = Object.keys(others).length + 1 // including self
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
+      {/* Radar HUD Indicator */}
+      <div className="absolute top-24 right-6 bg-black/60 backdrop-blur-md rounded border border-white/10 px-3 py-1 flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-space-cyan animate-pulse shadow-[0_0_8px_rgba(0,229,255,0.8)]" />
+        <span className="font-mono text-[9px] text-space-cyan tracking-widest uppercase">
+          PILOTS_ONLINE: {pilotCount}
+        </span>
+      </div>
+
       <AnimatePresence>
         {Object.entries(others).map(([key, p]) => (
           <motion.div

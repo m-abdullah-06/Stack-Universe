@@ -196,9 +196,8 @@ export default function UniverseClient() {
               </motion.div>
             )}
           </AnimatePresence>
-          
           {/* Phase 2: Social & Audio */}
-          <SpaceshipPresence room={username} currentUser={loggedInUser} />
+          <SpaceshipPresence room={username.toLowerCase()} currentUser={loggedInUser} />
           <UniverseRadio score={data.universeScore} languages={data.languages.map(l => l.name)} />
 
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
