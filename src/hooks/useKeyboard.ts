@@ -15,7 +15,9 @@ export function useKeyboard() {
       // Ignore if user is typing in an input or textarea
       if (
         e.target instanceof HTMLElement &&
-        (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+        (e.target.tagName === 'INPUT' || 
+         e.target.tagName === 'TEXTAREA' || 
+         e.target.isContentEditable)
       ) {
         return
       }
@@ -58,7 +60,9 @@ export function useKeyboard() {
       // Ignore if user is typing in an input or textarea
       if (
         e.target instanceof HTMLElement &&
-        (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+        (e.target.tagName === 'INPUT' || 
+         e.target.tagName === 'TEXTAREA' || 
+         e.target.isContentEditable)
       ) {
         return
       }

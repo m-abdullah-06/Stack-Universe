@@ -270,51 +270,6 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Broadcast Box (Mobile) */}
-            <div className="relative group mt-2">
-              <input 
-                type="text" 
-                maxLength={40}
-                placeholder="Broadcast a signal..."
-                className="w-full bg-white/[0.03] border border-white/10 rounded-full py-2 pl-3 pr-10 font-mono text-[9px] text-space-cyan placeholder:text-gray-700 focus:outline-none focus:border-space-cyan/40 transition-all"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const val = e.currentTarget.value;
-                    if (!val.trim()) return;
-                    
-                    window.dispatchEvent(new CustomEvent('universe:broadcast', { 
-                      detail: { text: val, user: session?.user?.name || 'Traveler' } 
-                    }));
-                    
-                    e.currentTarget.value = '';
-                    setQueryFeedback('Transmitted');
-                    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-                    feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 3000);
-                  }
-                }}
-              />
-              <button 
-                onClick={(e) => {
-                  const input = e.currentTarget.parentElement?.querySelector('input');
-                  if (!input) return;
-                  const val = input.value;
-                  if (!val.trim()) return;
-                  
-                  window.dispatchEvent(new CustomEvent('universe:broadcast', { 
-                    detail: { text: val, user: session?.user?.name || 'Traveler' } 
-                  }));
-                  
-                  input.value = '';
-                  setQueryFeedback('Transmitted');
-                  if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-                  feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 3000);
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-50 hover:opacity-100 hover:text-white group-focus-within:opacity-100 transition-opacity p-1"
-              >
-                ↵
-              </button>
-            </div>
           </div>
         </div>
 
@@ -485,51 +440,6 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
 
 
           <div className="space-y-3 pt-1">
-            <p className="text-[8px] font-mono text-white/20 uppercase tracking-[0.2em] px-1">Cosmic Transmission</p>
-            
-            <div className="relative group">
-              <input 
-                type="text" 
-                maxLength={40}
-                placeholder="Broadcast a signal..."
-                className="w-full bg-white/[0.03] border border-white/10 rounded-lg py-2 pl-3 pr-10 font-mono text-[9px] text-space-cyan placeholder:text-gray-700 focus:outline-none focus:border-space-cyan/40 transition-all"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const val = e.currentTarget.value;
-                    if (!val.trim()) return;
-                    
-                    // Dispatch to parent handler via custom event or prop
-                    window.dispatchEvent(new CustomEvent('universe:broadcast', { 
-                      detail: { text: val, user: session?.user?.name || 'Traveler' } 
-                    }));
-                    
-                    e.currentTarget.value = '';
-                    setQueryFeedback('Signal Transmitted');
-                  }
-                }}
-              />
-              <button 
-                onClick={(e) => {
-                  const input = e.currentTarget.parentElement?.querySelector('input');
-                  if (!input) return;
-                  const val = input.value;
-                  if (!val.trim()) return;
-                  
-                  window.dispatchEvent(new CustomEvent('universe:broadcast', { 
-                    detail: { text: val, user: session?.user?.name || 'Traveler' } 
-                  }));
-                  
-                  input.value = '';
-                  setQueryFeedback('Transmitted');
-                  if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-                  feedbackTimer.current = setTimeout(() => setQueryFeedback(null), 3000);
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-50 hover:opacity-100 hover:text-white group-focus-within:opacity-100 transition-opacity p-1"
-              >
-                ↵
-              </button>
-            </div>
-
             <p className="text-[8px] font-mono text-white/20 uppercase tracking-[0.2em] px-1 pt-2">AI Intelligence Layer</p>
             <div className="grid grid-cols-2 gap-2">
               <motion.button 
