@@ -88,17 +88,21 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
       })
       .on(
         'postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'activity_log', filter: `action=eq.transmitted` }, 
+        { event: 'INSERT', schema: 'public', table: 'activity_log' }, 
         (payload: any) => {
-          // Verify it's for this room
+          console.log('[Presence] RAW Postgres Change received:', payload)
+          
+          if (payload.new.action !== 'transmitted') return
           if (payload.new.target !== normalizedRoom) return
           
           const msg: ChatMessage = {
             id: payload.new.id,
             user: payload.new.username,
-            text: payload.new.metadata.text,
+            text: payload.new.metadata?.text || '',
             timestamp: new Date(payload.new.created_at).getTime(),
           }
+          
+          console.log('[Presence] Valid Chat Message parsed:', msg)
           
           setMessages(prev => {
             // Deduplicate (just in case)
