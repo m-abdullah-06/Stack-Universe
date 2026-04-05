@@ -660,32 +660,11 @@ function RepoDetailPanel({ repo, onClose, repoLanguages, recentCommits, actionRu
   )
 }
 
-// ── Main Scene ────────────────────────────────────────────────────────────────
-interface SolarSystemSceneProps {
-  data: UniverseData
-  cockpitMode?: boolean
-}
-
-export function SolarSystemScene({ data, cockpitMode }: SolarSystemSceneProps) {
-  const { selectedPlanetIndex, setSelectedPlanetIndex, viewMode, setViewMode } = useUniverseStore()
-  const [selectedLanguage, setSelectedLanguage] = useState<LanguageData | null>(null)
-  const [hoveredLanguage, setHoveredLanguage]   = useState<LanguageData | null>(null)
-  const [selectedRepo, setSelectedRepo]         = useState<GitHubRepo | null>(null)
-  const [commitTooltip, setCommitTooltip]       = useState<CommitTooltipState | null>(null)
-  const [beltPanelOpen, setBeltPanelOpen]       = useState(false)
-  const [beltHoverPos, setBeltHoverPos]         = useState<{ x: number; y: number } | null>(null)
-  const [perfLevel, setPerfLevel]               = useState<'low' | 'high'>('high')
-  const sunRef = useRef<THREE.Mesh>(null)
-
-  useEffect(() => {
-    const isLowPower = (typeof navigator !== 'undefined' && (navigator.hardwareConcurrency || 8) <= 4) || 
-                       (typeof window !== 'undefined' && window.innerWidth < 768)
-    if (isLowPower) setPerfLevel('low')
-  }, [])
+// ── Cockpit Camera Controller (Sub-component for R3F context) ──
+function SolarSystemCamera({ cockpitMode }: { cockpitMode?: boolean }) {
   const keys = useKeyboard()
   const targetLookAt = useRef(new THREE.Vector3(0, 0, -500))
 
-  // ── Cockpit Camera Logic (Multiverse Scale) ──
   useFrame((state) => {
     if (cockpitMode) {
       // 1. Position Setup (Controlled Movement)
@@ -718,6 +697,32 @@ export function SolarSystemScene({ data, cockpitMode }: SolarSystemSceneProps) {
       )
     }
   })
+
+  return null
+}
+
+// ── Main Scene ────────────────────────────────────────────────────────────────
+interface SolarSystemSceneProps {
+  data: UniverseData
+  cockpitMode?: boolean
+}
+
+export function SolarSystemScene({ data, cockpitMode }: SolarSystemSceneProps) {
+  const { selectedPlanetIndex, setSelectedPlanetIndex, viewMode, setViewMode } = useUniverseStore()
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageData | null>(null)
+  const [hoveredLanguage, setHoveredLanguage]   = useState<LanguageData | null>(null)
+  const [selectedRepo, setSelectedRepo]         = useState<GitHubRepo | null>(null)
+  const [commitTooltip, setCommitTooltip]       = useState<CommitTooltipState | null>(null)
+  const [beltPanelOpen, setBeltPanelOpen]       = useState(false)
+  const [beltHoverPos, setBeltHoverPos]         = useState<{ x: number; y: number } | null>(null)
+  const [perfLevel, setPerfLevel]               = useState<'low' | 'high'>('high')
+  const sunRef = useRef<THREE.Mesh>(null)
+
+  useEffect(() => {
+    const isLowPower = (typeof navigator !== 'undefined' && (navigator.hardwareConcurrency || 8) <= 4) || 
+                       (typeof window !== 'undefined' && window.innerWidth < 768)
+    if (isLowPower) setPerfLevel('low')
+  }, [])
 
   // ── Computed nebula state ──────────────────────────────────────────────────
   const ownRepos    = useMemo(() => data.repos.filter(r => !r.fork), [data.repos])
@@ -833,6 +838,7 @@ export function SolarSystemScene({ data, cockpitMode }: SolarSystemSceneProps) {
         <color attach="background" args={['#020205']} />
         <AdaptiveDpr pixelated />
         <ambientLight intensity={isEmpty ? 0.12 : 0.05} />
+        <SolarSystemCamera cockpitMode={cockpitMode} />
 
         <Suspense fallback={null}>
           {/* Pure minimal background stars */}
