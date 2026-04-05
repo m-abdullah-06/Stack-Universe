@@ -86,9 +86,27 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
 
   showHallOfGiants: false,
-  toggleHallOfGiants: () => set((s) => ({ showHallOfGiants: !s.showHallOfGiants })),
+  toggleHallOfGiants: () => set((s) => ({ 
+    showHallOfGiants: !s.showHallOfGiants,
+    showShareCard: false,
+    showNarrator: false,
+    showRoast: false,
+    showHoroscope: false,
+    showIdentityPanel: false,
+    showCustomisePanel: false,
+    showDNAFingerprint: false
+  })),
   showShareCard: false,
-  setShowShareCard: (v) => set({ showShareCard: v }),
+  setShowShareCard: (v) => set({ 
+    showShareCard: v,
+    showHallOfGiants: false,
+    showNarrator: false,
+    showRoast: false,
+    showHoroscope: false,
+    showIdentityPanel: false,
+    showCustomisePanel: false,
+    showDNAFingerprint: false
+  }),
 
   claimData: null,
   setClaimData: (data) => set({ claimData: data }),
@@ -102,24 +120,69 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   setHoveredRepoSummary: (summary) => set({ hoveredRepoSummary: summary }),
 
   showNarrator: false,
-  setShowNarrator: (v) => set({ showNarrator: v }),
+  setShowNarrator: (v) => set({ 
+    showNarrator: v,
+    showHallOfGiants: false,
+    showShareCard: false,
+    showRoast: false,
+    showHoroscope: false,
+    showIdentityPanel: false,
+    showCustomisePanel: false,
+    showDNAFingerprint: false
+  }),
 
   showRoast: false,
-  setShowRoast: (v) => set({ showRoast: v }),
+  setShowRoast: (v) => set({ 
+    showRoast: v,
+    showHallOfGiants: false,
+    showShareCard: false,
+    showNarrator: false,
+    showHoroscope: false,
+    showIdentityPanel: false,
+    showCustomisePanel: false,
+    showDNAFingerprint: false
+  }),
 
   showHoroscope: false,
-  setShowHoroscope: (v) => set({ showHoroscope: v }),
+  setShowHoroscope: (v) => set({ 
+    showHoroscope: v,
+    showHallOfGiants: false,
+    showShareCard: false,
+    showNarrator: false,
+    showRoast: false,
+    showIdentityPanel: false,
+    showCustomisePanel: false,
+    showDNAFingerprint: false
+  }),
 
   queriedPlanetNames: [],
   setQueriedPlanetNames: (names: string[]) => set({ queriedPlanetNames: names }),
 
   showIdentityPanel: false,
-  setShowIdentityPanel: (v: boolean) => set({ showIdentityPanel: v }),
+  setShowIdentityPanel: (v: boolean) => set({ 
+    showIdentityPanel: v,
+    showHallOfGiants: false,
+    showShareCard: false,
+    showNarrator: false,
+    showRoast: false,
+    showHoroscope: false,
+    showCustomisePanel: false,
+    showDNAFingerprint: false
+  }),
   identityObservations: [],
   setIdentityObservations: (obs) => set({ identityObservations: obs }),
 
   showCustomisePanel: false,
-  setShowCustomisePanel: (v) => set({ showCustomisePanel: v }),
+  setShowCustomisePanel: (v) => set({ 
+    showCustomisePanel: v,
+    showHallOfGiants: false,
+    showShareCard: false,
+    showNarrator: false,
+    showRoast: false,
+    showHoroscope: false,
+    showIdentityPanel: false,
+    showDNAFingerprint: false
+  }),
 
   showDNAFingerprint: false,
   setShowDNAFingerprint: (v) => set({ 

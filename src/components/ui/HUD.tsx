@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { UniverseData } from '@/types'
 import { useUniverseStore, useIsAnyPanelOpen } from '@/store'
 import { LoginButton } from './LoginButton'
@@ -18,23 +18,21 @@ interface HUDProps {
 export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
   const router = useRouter()
   const { data: session } = useSession()
-  const { 
-    toggleHallOfGiants, 
-    setShowShareCard, 
-    viewMode, 
-    setViewMode, 
-    claimData, 
-    setClaimData,
-    setShowClaimPulse,
-    setShowNarrator,
-    setShowRoast,
-    setShowHoroscope,
-    setQueriedPlanetNames,
-    setShowIdentityPanel,
-    showCustomisePanel,
-    setShowCustomisePanel,
-    setShowDNAFingerprint,
-  } = useUniverseStore()
+  const toggleHallOfGiants = useUniverseStore(s => s.toggleHallOfGiants)
+  const setShowShareCard = useUniverseStore(s => s.setShowShareCard)
+  const viewMode = useUniverseStore(s => s.viewMode)
+  const setViewMode = useUniverseStore(s => s.setViewMode)
+  const claimData = useUniverseStore(s => s.claimData)
+  const setClaimData = useUniverseStore(s => s.setClaimData)
+  const setShowClaimPulse = useUniverseStore(s => s.setShowClaimPulse)
+  const setShowNarrator = useUniverseStore(s => s.setShowNarrator)
+  const setShowRoast = useUniverseStore(s => s.setShowRoast)
+  const setShowHoroscope = useUniverseStore(s => s.setShowHoroscope)
+  const setQueriedPlanetNames = useUniverseStore(s => s.setQueriedPlanetNames)
+  const setShowIdentityPanel = useUniverseStore(s => s.setShowIdentityPanel)
+  const showCustomisePanel = useUniverseStore(s => s.showCustomisePanel)
+  const setShowCustomisePanel = useUniverseStore(s => s.setShowCustomisePanel)
+  const setShowDNAFingerprint = useUniverseStore(s => s.setShowDNAFingerprint)
 
   const isAnyPanelOpen = useIsAnyPanelOpen()
   
@@ -48,9 +46,11 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
   const isClaimed = !!claimData || !!data.claim
 
   // Auto-sync if prop has it but store doesn't
-  if (data.claim && !claimData) {
-    setClaimData(data.claim)
-  }
+  useEffect(() => {
+    if (data.claim && !claimData) {
+      setClaimData(data.claim)
+    }
+  }, [data.claim, claimData, setClaimData])
 
   const handleClaim = async (optIn: boolean) => {
     try {

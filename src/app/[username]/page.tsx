@@ -30,19 +30,18 @@ export default function UniversePage() {
   const rawUsername = params?.username as string
   const username = rawUsername?.replace(/^@/, '')?.toLowerCase()
 
-  const { 
-    setCurrentUniverse, 
-    setClaimData, 
-    claimData,
-    showIdentityPanel,
-    showDNAFingerprint,
-    showHallOfGiants,
-    showShareCard,
-    showNarrator,
-    showRoast,
-    showHoroscope,
-    showCustomisePanel
-  } = useUniverseStore()
+  const setCurrentUniverse = useUniverseStore(s => s.setCurrentUniverse)
+  const setClaimData = useUniverseStore(s => s.setClaimData)
+  const closeAllPanels = useUniverseStore(s => s.closeAllPanels)
+  const claimData = useUniverseStore(s => s.claimData)
+  const showIdentityPanel = useUniverseStore(s => s.showIdentityPanel)
+  const showDNAFingerprint = useUniverseStore(s => s.showDNAFingerprint)
+  const showHallOfGiants = useUniverseStore(s => s.showHallOfGiants)
+  const showShareCard = useUniverseStore(s => s.showShareCard)
+  const showNarrator = useUniverseStore(s => s.showNarrator)
+  const showRoast = useUniverseStore(s => s.showRoast)
+  const showHoroscope = useUniverseStore(s => s.showHoroscope)
+  const showCustomisePanel = useUniverseStore(s => s.showCustomisePanel)
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
@@ -51,6 +50,9 @@ export default function UniversePage() {
   useEffect(() => {
     if (!username) return
 
+    // Strictly ensure all panels are closed when entering a new solar system
+    closeAllPanels()
+    
     // Immediately clear previous user's claim data from global store
     setClaimData(null)
 
