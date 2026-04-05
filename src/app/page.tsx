@@ -200,19 +200,7 @@ export default function Home() {
                   </motion.div>
                 )}
 
-                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8">
-                  <button
-                    onClick={() => {
-                      const username = (document.getElementById('username-input') as HTMLInputElement)?.value
-                      if (username) router.push(`/universe/${username}`)
-                    }}
-                    className="px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-space-cyan hover:shadow-[0_0_30px_rgba(0,229,255,0.5)] transition-all duration-300 group flex items-center gap-2"
-                  >
-                    <span>Explore Universe</span>
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </button>
-                  
                   <Link 
                     href="/multiverse"
                     className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:bg-white/5 hover:border-space-cyan/50 hover:shadow-[0_0_20px_rgba(0,229,255,0.2)] transition-all duration-300 flex items-center gap-2"

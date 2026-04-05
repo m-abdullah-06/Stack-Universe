@@ -67,7 +67,7 @@ export function SpaceshipPresence({ room, currentUser }: SpaceshipPresenceProps)
   return (
     <>
       {/* ── Pilot Radar (Safe Zone) ── */}
-      <div className="fixed bottom-14 right-3 md:top-8 md:bottom-auto md:right-8 md:left-auto z-[120] pointer-events-auto">
+      <div className="fixed bottom-14 right-3 md:top-4 md:bottom-auto md:right-4 md:left-auto z-[50] pointer-events-auto">
         <div className="bg-black/70 backdrop-blur-xl rounded-lg border border-white/10 px-3 py-2 flex items-center gap-3 shadow-[0_0_20px_rgba(0,0,0,0.8)]">
           <div className="relative">
             <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
