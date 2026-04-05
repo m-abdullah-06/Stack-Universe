@@ -16,6 +16,7 @@ import { NarratorPanel } from '@/components/ui/NarratorPanel'
 import { RoastPanel } from '@/components/ui/RoastPanel'
 import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
 import { IdentityPanel } from '@/components/ui/IdentityPanel'
+import { DNAFingerprint } from '@/components/ui/DNAFingerprint'
 import { SpaceshipPresence } from '@/components/multiplayer/SpaceshipPresence'
 import { UniverseRadio } from '@/components/audio/UniverseRadio'
 import { AuthGate } from '@/components/ui/AuthGate'
@@ -33,7 +34,8 @@ export default function UniverseClient() {
   const rawUsername = params?.username as string
   const username = rawUsername?.replace(/^@/, '')
 
-  const { setCurrentUniverse, setClaimData, claimData } = useUniverseStore()
+  const { setCurrentUniverse, setClaimData, claimData, closeAllPanels } = useUniverseStore()
+  const activePanel = useUniverseStore(s => s.activePanel)
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
@@ -43,12 +45,15 @@ export default function UniverseClient() {
     ? (session.user as any).login || session.user.name
     : null;
 
+  // Immediately reset panels + claim on username change
+  useEffect(() => {
+    closeAllPanels()
+    setClaimData(null)
+  }, [username, closeAllPanels, setClaimData])
+
   // Fetch universe data in background while cinematic plays
   useEffect(() => {
     if (!username) return
-
-    // Immediately clear previous user's claim data from global store
-    setClaimData(null)
 
     const fetchData = async () => {
       try {
@@ -218,15 +223,16 @@ export default function UniverseClient() {
 
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
-          <NarratorPanel data={data} />
-          <RoastPanel data={data} />
-          <HoroscopePanel data={data} />
-          <IdentityPanel data={data} />
-          <CustomisePanel data={data} />
-          <SpaceWeather data={data} />
-          <HallOfGiants />
-          <ShareCard data={data} />
-          
+          <AnimatePresence>
+            {activePanel === 'narrator' && <NarratorPanel data={data} />}
+            {activePanel === 'roast' && <RoastPanel data={data} />}
+            {activePanel === 'horoscope' && <HoroscopePanel data={data} />}
+            {activePanel === 'identity' && <IdentityPanel data={data} />}
+            {activePanel === 'customise' && <CustomisePanel data={data} />}
+            {activePanel === 'giants' && <HallOfGiants />}
+            {activePanel === 'share' && <ShareCard data={data} />}
+            {activePanel === 'dna' && <DNAFingerprint data={data} />}
+          </AnimatePresence>
           {cockpitMode && (
             <CockpitOverlay data={data} onExit={() => setCockpitMode(false)} />
           )}
