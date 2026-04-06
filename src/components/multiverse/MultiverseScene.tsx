@@ -13,6 +13,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { useKeyboard } from '@/hooks/useKeyboard'
+import { useSession } from 'next-auth/react'
+import { useUniverseStore } from '@/store'
 
 // Interactive WASD Flight with Proximity Triggers
 function ControlledShipCamera({ 
@@ -177,9 +179,17 @@ export function MultiverseScene({
   onProximityChange
 }: MultiverseSceneProps) {
   const router = useRouter()
+  const { status } = useSession()
+  const setShowAuthGate = useUniverseStore(s => s.setShowAuthGate)
 
   const handlePointerMissed = async () => {
     if (isWarping || cockpitMode) return
+
+    if (status === 'unauthenticated') {
+      setShowAuthGate(true)
+      return
+    }
+
     onWarpStart?.()
 
     try {
