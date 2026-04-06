@@ -16,6 +16,7 @@ import { RoastPanel } from '@/components/ui/RoastPanel'
 import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
 import { IdentityPanel } from '@/components/ui/IdentityPanel'
 import { DNAFingerprint } from '@/components/ui/DNAFingerprint'
+import { AuthGate } from '@/components/ui/AuthGate'
 import { useUniverseStore } from '@/store'
 import { useSession } from 'next-auth/react'
 import { SpaceshipPresence } from '@/components/multiplayer/SpaceshipPresence'
@@ -35,15 +36,21 @@ export default function UniversePage() {
   const closeAllPanels = useUniverseStore(s => s.closeAllPanels)
   const claimData = useUniverseStore(s => s.claimData)
   const activePanel = useUniverseStore(s => s.activePanel)
+  const showAuthGate = useUniverseStore(s => s.showAuthGate)
+  const setShowAuthGate = useUniverseStore(s => s.setShowAuthGate)
+  
   const [data, setData] = useState<UniverseData | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('cinematic')
   const [errorMsg, setErrorMsg] = useState('')
+
+  const loggedInLogin = (session?.user as any)?.login || session?.user?.name
 
   // Dedicated immediate reset effect
   useEffect(() => {
     closeAllPanels()
     setClaimData(null)
-  }, [username, closeAllPanels, setClaimData])
+    setShowAuthGate(false) // Reset gate on new page load
+  }, [username, closeAllPanels, setClaimData, setShowAuthGate])
 
   // Data fetching effect
   useEffect(() => {
@@ -62,17 +69,13 @@ export default function UniversePage() {
         }
 
         const json: UniverseData = await res.json()
-        console.log('Fetching claim for:', username)
         const claimJson = await claimRes.json()
-        console.log('Claim data received:', claimJson)
         
         const finalData = { ...json, claim: claimJson.claim }
-        console.log('Final data with claim:', !!finalData.claim)
         
         setData(finalData)
         setCurrentUniverse(finalData)
         setClaimData(claimJson.claim || null)
-        console.log('Claim data set:', claimJson.claim)
 
         // Store in Supabase (background)
         fetch('/api/universes', {
@@ -85,7 +88,7 @@ export default function UniversePage() {
             total_repos: json.repos.length,
             language_count: json.languages.length,
             account_age_years: json.accountAgeYears,
-            visitor_username: undefined,
+            visitor_username: loggedInLogin || undefined, // USE ACTUAL LOGIN
             top_languages: json.languages.slice(0, 5).map((l: any) => l.name),
           }),
         }).catch(console.warn)
@@ -96,7 +99,7 @@ export default function UniversePage() {
     }
 
     fetchData()
-  }, [username, setCurrentUniverse])
+  }, [username, setCurrentUniverse, loggedInLogin])
 
   const handleCinematicComplete = useCallback(() => {
     if (data) {
@@ -203,6 +206,13 @@ export default function UniversePage() {
 
       {/* Scanline grid overlay */}
       <div className="absolute inset-0 grid-overlay pointer-events-none opacity-30" />
+
+      {/* Auth Gate (Uncloseable Login) */}
+      <AnimatePresence>
+        {showAuthGate && status === 'unauthenticated' && (
+          <AuthGate />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

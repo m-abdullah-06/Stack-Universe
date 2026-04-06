@@ -25,9 +25,18 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
   const setShowClaimPulse = useUniverseStore((s) => s.setShowClaimPulse);
   const activePanel = useUniverseStore((s) => s.activePanel);
   const setActivePanel = useUniverseStore((s) => s.setActivePanel);
+  const setShowAuthGate = useUniverseStore((s) => s.setShowAuthGate);
   const setQueriedPlanetNames = useUniverseStore(
     (s) => s.setQueriedPlanetNames,
   );
+
+  const handleAction = (panel: typeof activePanel) => {
+    if (!session) {
+      setShowAuthGate(true);
+      return;
+    }
+    setActivePanel(activePanel === panel ? null : panel);
+  };
 
   const isAnyPanelOpen = useIsAnyPanelOpen();
 
@@ -233,7 +242,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
           {/* AI Mobile Actions */}
           <div className="flex items-center justify-around px-3 pb-3 border-t border-white/5 pt-2 bg-white/[0.02]">
             <button
-              onClick={() => setActivePanel(isNarratorOpen ? null : "narrator")}
+              onClick={() => handleAction("narrator")}
               className={`flex flex-col items-center gap-1 group transition-all ${isNarratorOpen ? "text-space-cyan scale-110" : "text-gray-500 hover:text-gray-300"}`}
             >
               <span className="text-[14px] group-hover:scale-110 transition-transform">
@@ -244,7 +253,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               </span>
             </button>
             <button
-              onClick={() => setActivePanel(isRoastOpen ? null : "roast")}
+              onClick={() => handleAction("roast")}
               className={`flex flex-col items-center gap-1 group transition-all ${isRoastOpen ? "text-orange-500 scale-110" : "text-gray-500 hover:text-gray-300"}`}
             >
               <span className="text-[14px] group-hover:scale-110 transition-transform">
@@ -255,9 +264,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               </span>
             </button>
             <button
-              onClick={() =>
-                setActivePanel(isHoroscopeOpen ? null : "horoscope")
-              }
+              onClick={() => handleAction("horoscope")}
               className={`flex flex-col items-center gap-1 group transition-all ${isHoroscopeOpen ? "text-purple-500 scale-110" : "text-gray-500 hover:text-gray-300"}`}
             >
               <span className="text-[14px] group-hover:scale-110 transition-transform">
@@ -268,7 +275,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               </span>
             </button>
             <button
-              onClick={() => setActivePanel(isIdentityOpen ? null : "identity")}
+              onClick={() => handleAction("identity")}
               className={`flex flex-col items-center gap-1 group transition-all ${isIdentityOpen ? "text-green-500 scale-110" : "text-gray-500 hover:text-gray-300"}`}
             >
               <span className="text-[14px] group-hover:scale-110 transition-transform">
@@ -279,7 +286,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               </span>
             </button>
             <button
-              onClick={() => setActivePanel(activePanel === 'dna' ? null : 'dna')}
+              onClick={() => handleAction("dna")}
               className={`flex flex-col items-center gap-1 group transition-all ${activePanel === 'dna' ? 'text-purple-500 scale-110' : 'text-gray-500 hover:text-gray-300'}`}
             >
               <span className="text-[14px] group-hover:scale-110 transition-transform">
@@ -620,7 +627,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
             </p>
             <div className="grid grid-cols-2 gap-2">
               <motion.button
-                onClick={() => setActivePanel("narrator")}
+                onClick={() => handleAction("narrator")}
                 whileHover={{
                   scale: 1.02,
                   backgroundColor: "rgba(255,255,255,0.08)",
@@ -631,7 +638,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
                 <span className="text-xs">🎙</span> NARRATE
               </motion.button>
               <motion.button
-                onClick={() => setActivePanel("roast")}
+                onClick={() => handleAction("roast")}
                 whileHover={{
                   scale: 1.02,
                   backgroundColor: "rgba(249,115,22,0.1)",
@@ -643,7 +650,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               </motion.button>
             </div>
             <motion.button
-              onClick={() => setActivePanel('horoscope')}
+              onClick={() => handleAction('horoscope')}
               whileHover={{
                 scale: 1.01,
                 backgroundColor: "rgba(168,85,247,0.1)",
@@ -654,7 +661,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               <span className="text-xs">✨</span> GENERATE HOROSCOPE
             </motion.button>
             <motion.button
-              onClick={() => setActivePanel('identity')}
+              onClick={() => handleAction('identity')}
               whileHover={{
                 scale: 1.01,
                 backgroundColor: "rgba(0,229,255,0.1)",
@@ -665,7 +672,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               <span className="text-xs">⚙️</span> DIAGNOSE IDENTITY
             </motion.button>
             <motion.button
-              onClick={() => setActivePanel('dna')}
+              onClick={() => handleAction('dna')}
               whileHover={{
                 scale: 1.01,
                 backgroundColor: "rgba(124,58,237,0.1)",

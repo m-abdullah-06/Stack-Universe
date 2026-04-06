@@ -44,6 +44,9 @@ interface UniverseStore {
   identityObservations: string[]
   setIdentityObservations: (obs: string[]) => void
 
+  showAuthGate: boolean
+  setShowAuthGate: (v: boolean) => void
+
   closeAllPanels: () => void
 }
 
@@ -72,11 +75,11 @@ export const useUniverseStore = create<UniverseStore>((set) => ({
   setActivePanel: (panel) => set({ activePanel: panel }),
   closeAllPanels: () => set({ activePanel: null }),
 
-
-
   claimData: null,
   setClaimData: (data) => set({ claimData: data }),
   showClaimPulse: false,
+  setShowAuthGate: (v) => set({ showAuthGate: v }),
+  showAuthGate: false,
   setShowClaimPulse: (v) => set({ showClaimPulse: v }),
   hoveredRepo: null,
   setHoveredRepo: (repo) => set({ hoveredRepo: repo }),

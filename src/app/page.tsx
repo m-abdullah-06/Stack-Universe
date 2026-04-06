@@ -18,8 +18,10 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { CockpitOverlay } from "@/components/ui/CockpitOverlay";
 import { AuthGate } from "@/components/ui/AuthGate";
+import { WelcomeAuthPopup } from "@/components/ui/WelcomeAuthPopup";
 import { useKeyboard } from "@/hooks/useKeyboard";
 import { useShipAudio } from "@/hooks/useShipAudio";
+import { useUniverseStore } from "@/store";
 
 export default function Home() {
   const [universes, setUniverses] = useState<StoredUniverse[]>([]);
@@ -27,12 +29,15 @@ export default function Home() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [isWarping, setIsWarping] = useState(false);
   const [cockpitMode, setCockpitMode] = useState(false);
-  const [showAuthGate, setShowAuthGate] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [proximityTarget, setProximityTarget] = useState<string | null>(null);
 
   const { data: session, status } = useSession();
   const router = useRouter();
+  
+  const showAuthGate = useUniverseStore(s => s.showAuthGate);
+  const setShowAuthGate = useUniverseStore(s => s.setShowAuthGate);
+
   const loggedInUser = session?.user
     ? (session.user as any).login || session.user.name
     : null;
@@ -64,11 +69,22 @@ export default function Home() {
     });
   }, []);
 
+  const handleSearch = (username: string) => {
+    if (status === 'unauthenticated') {
+      setShowAuthGate(true)
+    } else {
+      setIsWarping(true)
+      router.push(`/universe/${username}`)
+    }
+  }
+
   return (
     <main
       className="relative w-screen h-screen overflow-hidden bg-[#0a0a0f] selection:bg-space-cyan/30"
       onMouseMove={handleMouseMove}
     >
+      <WelcomeAuthPopup />
+      
       {/* 3D Background */}
       <MultiverseScene
         universes={universes}
@@ -77,14 +93,7 @@ export default function Home() {
         onWarpStart={() => setIsWarping(true)}
         cockpitMode={cockpitMode}
         selectedTarget={selectedTarget}
-        onTargetSelect={(username: string) => {
-          if (status === 'unauthenticated') {
-            setShowAuthGate(true)
-          } else {
-            setIsWarping(true)
-            router.push(`/universe/${username}`)
-          }
-        }}
+        onTargetSelect={handleSearch}
         onProximityChange={setProximityTarget}
       />
 
@@ -103,7 +112,7 @@ export default function Home() {
 
       {/* Auth Gate (Uncloseable Login) */}
       <AnimatePresence>
-        {showAuthGate && (
+        {showAuthGate && status === 'unauthenticated' && (
           <AuthGate />
         )}
       </AnimatePresence>
@@ -128,7 +137,6 @@ export default function Home() {
       {/* Live Discovery Feed */}
       <DiscoveryTicker />
 
-      {/* ── Foreground UI Layer ── */}
       {/* ── Foreground UI Layer ── */}
       <AnimatePresence>
         {!cockpitMode && (
@@ -170,7 +178,7 @@ export default function Home() {
                 </div>
 
                 {/* Search */}
-                <SearchBar />
+                <SearchBar onSearch={handleSearch} />
 
                 {/* Stats */}
                 {universes.length > 0 && (
