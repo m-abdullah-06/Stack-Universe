@@ -5,14 +5,22 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { MultiverseMap } from '@/components/multiverse/MultiverseMap'
 import { DiscoveryTicker } from '@/components/ui/DiscoveryTicker'
+import { AuthGate } from '@/components/ui/AuthGate'
+import { useUniverseStore } from '@/store'
+import { useSession } from 'next-auth/react'
+import { AnimatePresence } from 'framer-motion'
 import type { StoredUniverse } from '@/types'
 
 export default function MultiversePage() {
   const [universes, setUniverses] = useState<StoredUniverse[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { status } = useSession()
+  const showAuthGate = useUniverseStore(s => s.showAuthGate)
+  const setShowAuthGate = useUniverseStore(s => s.setShowAuthGate)
 
   useEffect(() => {
+    setShowAuthGate(false) // Reset on load
     fetch('/api/universes')
       .then((r) => r.json())
       .then((data) => {
@@ -72,6 +80,13 @@ export default function MultiversePage() {
       {/* Legend / Hover Details UI will be inside MultiverseMap or as an overlay */}
       
       <DiscoveryTicker />
+
+      {/* Auth Gate (Uncloseable Login) */}
+      <AnimatePresence>
+        {showAuthGate && status === 'unauthenticated' && (
+          <AuthGate />
+        )}
+      </AnimatePresence>
     </main>
   )
 }

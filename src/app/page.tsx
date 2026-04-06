@@ -299,10 +299,10 @@ export default function Home() {
                 </div>
 
                 {leaderboard.map((entry, i) => (
-                  <Link
+                  <button
                     key={entry.username}
-                    href={`/universe/${entry.username}`}
-                    className="grid grid-cols-12 gap-2 items-center py-2.5 px-2 hover:bg-white/5 rounded-lg transition-all group"
+                    onClick={() => handleSearch(entry.username)}
+                    className="w-full grid grid-cols-12 gap-2 items-center py-2.5 px-2 hover:bg-white/5 rounded-lg transition-all group pointer-events-auto text-left"
                   >
                     <span
                       className="col-span-1 font-orbitron text-xs"
@@ -322,7 +322,7 @@ export default function Home() {
                     <span className="col-span-3 text-right font-mono text-[10px] text-yellow-500/80">
                       ★ {entry.total_stars.toLocaleString()}
                     </span>
-                  </Link>
+                  </button>
                 ))}
               </div>
             </motion.div>

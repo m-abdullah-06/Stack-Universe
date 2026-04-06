@@ -1,7 +1,9 @@
 'use client'
 
 import { useRef, useEffect, useState, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useUniverseStore } from '@/store'
 import type { StoredUniverse } from '@/types'
 
 interface MultiverseMapProps {
@@ -11,6 +13,8 @@ interface MultiverseMapProps {
 export function MultiverseMap({ universes }: MultiverseMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const router = useRouter()
+  const { data: session, status } = useSession()
+  const setShowAuthGate = useUniverseStore(s => s.setShowAuthGate)
   
   // React State (for triggering UI overlays like Tooltips)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
@@ -195,7 +199,13 @@ export function MultiverseMap({ universes }: MultiverseMapProps) {
   }
 
   const handleClick = () => {
-    if (hovered) router.push(`/universe/${hovered.username}`)
+    if (!hovered) return
+    
+    if (status === 'unauthenticated') {
+      setShowAuthGate(true)
+    } else {
+      router.push(`/universe/${hovered.username}`)
+    }
   }
 
   return (

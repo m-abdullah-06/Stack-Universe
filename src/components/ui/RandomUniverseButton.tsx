@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { useUniverseStore } from '@/store'
 
 interface RandomUniverseButtonProps {
   className?: string
@@ -14,9 +16,15 @@ export function RandomUniverseButton({
   label = '⟳ DRIFT TO RANDOM UNIVERSE',
 }: RandomUniverseButtonProps) {
   const router = useRouter()
+  const { status } = useSession()
+  const setShowAuthGate = useUniverseStore(s => s.setShowAuthGate)
   const [loading, setLoading] = useState(false)
 
   const driftToRandom = async () => {
+    if (status === 'unauthenticated') {
+      setShowAuthGate(true)
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch('/api/universes')
