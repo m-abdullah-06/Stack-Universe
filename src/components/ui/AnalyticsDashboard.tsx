@@ -10,6 +10,9 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ data, standalone = false }: AnalyticsDashboardProps) {
+  // RENDER-TIME LOG - THIS WILL SHOW EVEN IF COMPONENT CRASHES LATER
+  console.log('⚛️ AnalyticsDashboard RENDER START');
+
   const setActivePanel = useUniverseStore(s => s.setActivePanel)
   const [activeTab, setActiveTab] = useState('overview')
 

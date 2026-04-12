@@ -130,6 +130,33 @@ export default function UniversePage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-space-black">
+      {/* STATE PROBE - DEBUG ONLY */}
+      <div 
+        id="STATE_PROBE"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(0, 255, 0, 0.8)',
+          color: 'black',
+          padding: '4px 20px',
+          zIndex: 99999999,
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          fontWeight: 'bold',
+          pointerEvents: 'none',
+          borderRadius: '0 0 10px 10px',
+          display: 'flex',
+          gap: '15px'
+        }}
+      >
+        <span>ACTIVE_PANEL: {activePanel || 'null'}</span>
+        <span>STATUS: {status}</span>
+        <span>DATA: {data ? 'LOADED' : 'MISSING'}</span>
+        <span>LOAD_STATE: {loadState}</span>
+      </div>
+
       {/* Cinematic entry */}
       <AnimatePresence>
         {loadState === 'cinematic' && (

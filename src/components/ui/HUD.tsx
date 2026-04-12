@@ -31,10 +31,16 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
   );
 
   const handleAction = (panel: typeof activePanel) => {
+    console.log(`[HUD] handleAction clicked for: ${panel}`);
+    console.log(`[HUD] Current session:`, !!session);
+
     if (!session) {
+      console.warn('[HUD] No session found, showing AuthGate');
       setShowAuthGate(true);
       return;
     }
+    
+    console.log(`[HUD] Setting active panel from ${activePanel} to ${activePanel === panel ? 'null' : panel}`);
     setActivePanel(activePanel === panel ? null : panel);
   };
 
