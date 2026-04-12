@@ -19,7 +19,7 @@ import { DNAFingerprint } from '@/components/ui/DNAFingerprint'
 import { AnalyticsDashboard } from '@/components/ui/AnalyticsDashboard'
 import { AuthGate } from '@/components/ui/AuthGate'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { useUniverseStore } from '@/store'
+import { useUniverseStore, getStoreId } from '@/store'
 import { useSession } from 'next-auth/react'
 import { SpaceshipPresence } from '@/components/multiplayer/SpaceshipPresence'
 import type { UniverseData } from '@/types'
@@ -162,9 +162,32 @@ export default function UniversePage() {
         }}
       >
         <span>STATUS_BAR: {activePanel ? `PANEL_ACTIVE: ${activePanel.toUpperCase()}` : 'IDLE'}</span>
+        <span>STORE_ID: {getStoreId()}</span>
         <span>AUTH: {status}</span>
         <span>LOAD: {loadState}</span>
       </div>
+
+      <button
+        onClick={() => {
+            console.log('[PAGE] EMERGENCY FORCE ANALYTICS CLICKED');
+            useUniverseStore.getState().setActivePanel('analytics');
+        }}
+        style={{
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            zIndex: 99999999,
+            padding: '5px 10px',
+            background: 'red',
+            color: 'white',
+            fontSize: '8px',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+        }}
+      >
+        FORCE ANALYTICS (ID: {getStoreId()})
+      </button>
 
       <AnimatePresence>
         {loadState === 'cinematic' && (

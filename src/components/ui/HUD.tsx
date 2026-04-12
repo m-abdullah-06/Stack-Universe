@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import type { UniverseData } from "@/types";
-import { useUniverseStore, useIsAnyPanelOpen } from "@/store";
+import { useUniverseStore, useIsAnyPanelOpen, getStoreId } from "@/store";
 import { LoginButton } from "./LoginButton";
 import { AmbientAudio } from "./AmbientAudio";
 
@@ -44,7 +44,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
     console.log(`[HUD] Setting active panel from ${activePanel} to ${targetPanel}`);
     
     if (panel === 'analytics') {
-      window.alert(`[HUD] SIGNAL SENT: analytics`);
+      window.alert(`[HUD] SIGNAL SENT: analytics (Store_ID: ${getStoreId()})`);
     }
 
     setActivePanel(targetPanel);

@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import type { UniverseData, StoredUniverse, LeaderboardEntry, ViewMode, GitHubRepo, ClaimData } from '@/types'
 
+console.log('💎 [STORE MODULE] Module Evaluation Start');
+const STORE_INSTANCE_ID = Math.random().toString(36).substring(7).toUpperCase();
+console.log(`💎 [STORE MODULE] Instance Created: ID_${STORE_INSTANCE_ID}`);
+
+export const getStoreId = () => STORE_INSTANCE_ID;
+
 interface UniverseStore {
   currentUniverse: UniverseData | null
   setCurrentUniverse: (data: UniverseData | null) => void
