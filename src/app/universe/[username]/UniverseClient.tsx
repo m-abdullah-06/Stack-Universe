@@ -234,18 +234,7 @@ export default function UniverseClient() {
             {activePanel === 'giants' && <HallOfGiants />}
             {activePanel === 'share' && <ShareCard data={data} />}
             {activePanel === 'dna' && <DNAFingerprint data={data} />}
-            {activePanel === 'analytics' && (
-               <ErrorBoundary fallback={
-                 <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80">
-                   <div className="bg-red-900/50 border border-red-500 rounded-lg p-6 max-w-lg w-full">
-                     <h2 className="text-xl text-red-400 font-orbitron mb-4">Analytics Crash</h2>
-                     <button onClick={() => useUniverseStore.getState().setActivePanel(null)} className="px-4 py-2 bg-white/10 rounded">Close Panel</button>
-                   </div>
-                 </div>
-               }>
-                 <AnalyticsDashboard data={data} />
-               </ErrorBoundary>
-            )}
+            {activePanel === 'analytics' && <AnalyticsDashboard data={data} />}
           </AnimatePresence>
           {cockpitMode && (
             <CockpitOverlay data={data} onExit={() => setCockpitMode(false)} />
