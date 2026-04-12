@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SolarSystemScene } from '@/components/solar-system/SolarSystemScene'
@@ -19,7 +19,7 @@ import { DNAFingerprint } from '@/components/ui/DNAFingerprint'
 import { AnalyticsDashboard } from '@/components/ui/AnalyticsDashboard'
 import { AuthGate } from '@/components/ui/AuthGate'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { useUniverseStore, getStoreId } from '@/store'
+import { useUniverseStore } from '@/store'
 import { useSession } from 'next-auth/react'
 import { SpaceshipPresence } from '@/components/multiplayer/SpaceshipPresence'
 import type { UniverseData } from '@/types'
@@ -47,17 +47,14 @@ export default function UniversePage() {
 
   const loggedInLogin = (session?.user as any)?.login || session?.user?.name
 
-  // HARD VERSIONING TO BYPASS STALE CHUNKS
-  const VERSION = "V_PROBE_CENTER_3";
-
-  // RENDER ALERT - ONLY IN CLIENT
+  // Dedicated immediate reset effect
   useEffect(() => {
-    if (activePanel === 'analytics') {
-      console.log('[PAGE] ANALYTICS ACTIVE SIGNAL RECEIVED');
-      window.alert(`[PAGE ALERT] Signal Received! activePanel is: ${activePanel}`);
-    }
-  }, [activePanel]);
+    closeAllPanels()
+    setClaimData(null)
+    setShowAuthGate(false) // Reset gate on new page load
+  }, [username, closeAllPanels, setClaimData, setShowAuthGate])
 
+  // Data fetching effect
   useEffect(() => {
     if (!username) return
 
@@ -82,6 +79,7 @@ export default function UniversePage() {
         setCurrentUniverse(finalData)
         setClaimData(claimJson.claim || null)
 
+        // Store in Supabase (background)
         fetch('/api/universes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -92,7 +90,7 @@ export default function UniversePage() {
             total_repos: json.repos.length,
             language_count: json.languages.length,
             account_age_years: json.accountAgeYears,
-            visitor_username: loggedInLogin || undefined, 
+            visitor_username: loggedInLogin || undefined, // USE ACTUAL LOGIN
             top_languages: json.languages.slice(0, 5).map((l: any) => l.name),
           }),
         }).catch(console.warn)
@@ -106,11 +104,16 @@ export default function UniversePage() {
   }, [username, setCurrentUniverse, loggedInLogin])
 
   const handleCinematicComplete = useCallback(() => {
-    if (data) setLoadState('ready')
-    else if (errorMsg) setLoadState('error')
-    else setLoadState('loading')
+    if (data) {
+      setLoadState('ready')
+    } else if (errorMsg) {
+      setLoadState('error')
+    } else {
+      setLoadState('loading')
+    }
   }, [data, errorMsg])
 
+  // Once loading state is active and data arrives, switch to ready
   useEffect(() => {
     if (loadState === 'loading' && data) {
       setLoadState('ready')
@@ -127,56 +130,7 @@ export default function UniversePage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-space-black">
-      
-      {/* 
-        NEW CENTERED STATE PROBE - IMPOSSIBLE TO MISS
-      */}
-      <div 
-        id="CENTER_PROBE"
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          background: activePanel === 'analytics' ? '#ff00ff' : '#00ff00',
-          color: 'black',
-          padding: '10px',
-          zIndex: 1000000,
-          fontSize: '12px',
-          fontWeight: 'bold',
-          border: '4px solid white',
-          boxShadow: '0 0 20px rgba(0,0,0,0.5)'
-        }}
-      >
-        <div>VER: {VERSION}</div>
-        <div>PANEL: {activePanel || 'NONE'}</div>
-        <div>STORE: {getStoreId()}</div>
-      </div>
-
-      <button
-        onClick={() => {
-            window.alert("FORCE CLICK");
-            useUniverseStore.getState().setActivePanel('analytics');
-        }}
-        style={{
-            position: 'fixed',
-            top: '100px',
-            right: '20px',
-            zIndex: 1000001,
-            padding: '10px',
-            background: 'red',
-            color: 'white',
-            border: '2px solid white',
-            cursor: 'pointer'
-        }}
-      >
-        FORCE (ID: {getStoreId()})
-      </button>
-
-      {/* DASHBOARD AT THE ABSOLUTE DOM TOP */}
-      {data && (
-        <AnalyticsDashboard data={data} visible={activePanel === 'analytics'} />
-      )}
-
+      {/* Cinematic entry */}
       <AnimatePresence>
         {loadState === 'cinematic' && (
           <EntryCinematic
@@ -189,6 +143,7 @@ export default function UniversePage() {
         )}
       </AnimatePresence>
 
+      {/* Loading state (data not ready yet after cinematic) */}
       {loadState === 'loading' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-20">
           <motion.div
@@ -198,19 +153,40 @@ export default function UniversePage() {
             style={{ borderTopColor: '#00e5ff' }}
           />
           <p className="font-mono text-xs text-space-cyan/60 tracking-widest">
-            LOADING...
+            ASSEMBLING UNIVERSE DATA...
           </p>
         </div>
       )}
 
+      {/* Error state */}
       {loadState === 'error' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-          <p className="text-red-500">{errorMsg}</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 z-20">
+          <div className="hud-panel relative rounded p-8 max-w-md text-center">
+            <p className="font-orbitron text-space-magenta text-glow-magenta text-xl mb-2">
+              UNIVERSE NOT FOUND
+            </p>
+            <p className="font-mono text-xs text-gray-500 mb-4">
+              @{username} does not appear to exist in this dimension.
+            </p>
+            <p className="font-mono text-xs text-gray-700 mb-6">{errorMsg}</p>
+            <button
+              onClick={() => router.push('/')}
+              className="font-mono text-xs text-space-cyan hover:text-white transition-colors tracking-widest"
+            >
+              ← RETURN TO MULTIVERSE
+            </button>
+          </div>
         </div>
       )}
 
+      {/* Solar system scene */}
       {loadState === 'ready' && data && (
-        <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
           <SolarSystemScene data={data} />
           <HUD data={data} />
           <SpaceshipPresence room={username.toLowerCase()} currentUser={session?.user?.name || null} />
@@ -226,12 +202,32 @@ export default function UniversePage() {
             {activePanel === 'share' && <ShareCard data={data} />}
             {activePanel === 'identity' && <IdentityPanel data={data} />}
             {activePanel === 'dna' && <DNAFingerprint data={data} />}
+            {activePanel === 'analytics' && (
+               <ErrorBoundary fallback={
+                 <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80">
+                   <div className="bg-red-900/50 border border-red-500 rounded-lg p-6 max-w-lg w-full">
+                     <h2 className="text-xl text-red-400 font-orbitron mb-4">Analytics Crash</h2>
+                     <p className="text-sm font-mono text-white mb-4">Please report this sequence to AI.</p>
+                     <button onClick={() => useUniverseStore.getState().setActivePanel(null)} className="px-4 py-2 bg-white/10 rounded">Close Panel</button>
+                   </div>
+                 </div>
+               }>
+                 <AnalyticsDashboard data={data} />
+               </ErrorBoundary>
+            )}
           </AnimatePresence>
         </motion.div>
       )}
 
+      {/* Scanline grid overlay */}
       <div className="absolute inset-0 grid-overlay pointer-events-none opacity-30" />
-      <AnimatePresence>{showAuthGate && status === 'unauthenticated' && <AuthGate />}</AnimatePresence>
+
+      {/* Auth Gate (Uncloseable Login) */}
+      <AnimatePresence>
+        {showAuthGate && status === 'unauthenticated' && (
+          <AuthGate />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
