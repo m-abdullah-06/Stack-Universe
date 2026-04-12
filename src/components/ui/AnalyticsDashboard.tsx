@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useUniverseStore } from '@/store'
 import type { UniverseData } from '@/types'
@@ -32,6 +32,10 @@ export function AnalyticsDashboard({ data, standalone = false }: AnalyticsDashbo
   const setActivePanel = useUniverseStore(s => s.setActivePanel)
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
   const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    console.log('📊 AnalyticsDashboard mounted with data:', !!data)
+  }, [data])
 
   const handleClose = () => {
     if (!standalone) setActivePanel(null)
