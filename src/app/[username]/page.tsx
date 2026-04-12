@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SolarSystemScene } from '@/components/solar-system/SolarSystemScene'
@@ -47,21 +47,16 @@ export default function UniversePage() {
 
   const loggedInLogin = (session?.user as any)?.login || session?.user?.name
 
-  // SCREAMING DEBUG
-  if (typeof window !== 'undefined' && activePanel === 'analytics') {
-    // We only alert once per render cycle if state is analytics
-    console.log('[PAGE] ALERTING STATE:', activePanel);
-  }
+  // HARD VERSIONING TO BYPASS STALE CHUNKS
+  const VERSION = "V_PROBE_CENTER_3";
 
-  // DISABLED AUTO-RESET EFFECT TO PREVENT RACE CONDITIONS
-  /*
+  // RENDER ALERT - ONLY IN CLIENT
   useEffect(() => {
-    console.log('[PAGE] Auto-reset panels triggered for username:', username);
-    closeAllPanels()
-    setClaimData(null)
-    setShowAuthGate(false)
-  }, [username, closeAllPanels, setClaimData, setShowAuthGate])
-  */
+    if (activePanel === 'analytics') {
+      console.log('[PAGE] ANALYTICS ACTIVE SIGNAL RECEIVED');
+      window.alert(`[PAGE ALERT] Signal Received! activePanel is: ${activePanel}`);
+    }
+  }, [activePanel]);
 
   useEffect(() => {
     if (!username) return
@@ -132,62 +127,55 @@ export default function UniversePage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-space-black">
+      
       {/* 
-         CRITICAL: DASHBOARD IS NOW AT THE ABSOLUTE TOP OF THE DOM 
-         WE BYPASS ALL OTHER CONDITIONAL BLOCKS
+        NEW CENTERED STATE PROBE - IMPOSSIBLE TO MISS
       */}
-      {data && (
-        <AnalyticsDashboard data={data} visible={activePanel === 'analytics'} />
-      )}
-
-      {/* STATE PROBE */}
       <div 
-        id="STATE_PROBE"
+        id="CENTER_PROBE"
         style={{
           position: 'fixed',
-          top: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: activePanel === 'analytics' ? 'yellow' : 'rgba(0, 255, 0, 0.8)',
+          top: '20px',
+          right: '20px',
+          background: activePanel === 'analytics' ? '#ff00ff' : '#00ff00',
           color: 'black',
-          padding: '4px 20px',
-          zIndex: 99999999,
-          fontSize: '10px',
-          fontFamily: 'monospace',
+          padding: '10px',
+          zIndex: 1000000,
+          fontSize: '12px',
           fontWeight: 'bold',
-          pointerEvents: 'none',
-          borderRadius: '0 0 10px 10px',
-          display: 'flex',
-          gap: '15px'
+          border: '4px solid white',
+          boxShadow: '0 0 20px rgba(0,0,0,0.5)'
         }}
       >
-        <span>STATUS_BAR: {activePanel ? `PANEL_ACTIVE: ${activePanel.toUpperCase()}` : 'IDLE'}</span>
-        <span>STORE_ID: {getStoreId()}</span>
-        <span>AUTH: {status}</span>
-        <span>LOAD: {loadState}</span>
+        <div>VER: {VERSION}</div>
+        <div>PANEL: {activePanel || 'NONE'}</div>
+        <div>STORE: {getStoreId()}</div>
       </div>
 
       <button
         onClick={() => {
-            console.log('[PAGE] EMERGENCY FORCE ANALYTICS CLICKED');
+            window.alert("FORCE CLICK");
             useUniverseStore.getState().setActivePanel('analytics');
         }}
         style={{
             position: 'fixed',
-            bottom: '10px',
-            left: '10px',
-            zIndex: 99999999,
-            padding: '5px 10px',
+            top: '100px',
+            right: '20px',
+            zIndex: 1000001,
+            padding: '10px',
             background: 'red',
             color: 'white',
-            fontSize: '8px',
-            border: 'none',
-            borderRadius: '5px',
+            border: '2px solid white',
             cursor: 'pointer'
         }}
       >
-        FORCE ANALYTICS (ID: {getStoreId()})
+        FORCE (ID: {getStoreId()})
       </button>
+
+      {/* DASHBOARD AT THE ABSOLUTE DOM TOP */}
+      {data && (
+        <AnalyticsDashboard data={data} visible={activePanel === 'analytics'} />
+      )}
 
       <AnimatePresence>
         {loadState === 'cinematic' && (
@@ -210,27 +198,19 @@ export default function UniversePage() {
             style={{ borderTopColor: '#00e5ff' }}
           />
           <p className="font-mono text-xs text-space-cyan/60 tracking-widest">
-            ASSEMBLING UNIVERSE DATA...
+            LOADING...
           </p>
         </div>
       )}
 
       {loadState === 'error' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 z-20">
-          <div className="hud-panel relative rounded p-8 max-w-md text-center">
-            <h2 className="font-orbitron text-space-magenta text-xl mb-2">ERROR</h2>
-            <p className="font-mono text-xs text-gray-700 mb-6">{errorMsg}</p>
-            <button onClick={() => router.push('/')} className="text-space-cyan">RETURN</button>
-          </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+          <p className="text-red-500">{errorMsg}</p>
         </div>
       )}
 
       {loadState === 'ready' && data && (
-        <motion.div
-          className="absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <SolarSystemScene data={data} />
           <HUD data={data} />
           <SpaceshipPresence room={username.toLowerCase()} currentUser={session?.user?.name || null} />
