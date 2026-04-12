@@ -22,8 +22,8 @@ interface UniverseStore {
   viewMode: ViewMode
   setViewMode: (mode: ViewMode) => void
 
-  activePanel: 'narrator' | 'roast' | 'horoscope' | 'identity' | 'dna' | 'giants' | 'share' | 'customise' | null
-  setActivePanel: (panel: 'narrator' | 'roast' | 'horoscope' | 'identity' | 'dna' | 'giants' | 'share' | 'customise' | null) => void
+  activePanel: 'narrator' | 'roast' | 'horoscope' | 'identity' | 'dna' | 'giants' | 'share' | 'customise' | 'analytics' | null
+  setActivePanel: (panel: 'narrator' | 'roast' | 'horoscope' | 'identity' | 'dna' | 'giants' | 'share' | 'customise' | 'analytics' | null) => void
 
 
 

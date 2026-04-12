@@ -92,6 +92,7 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
   const isNarratorOpen = activePanel === "narrator";
   const isRoastOpen = activePanel === "roast";
   const isIdentityOpen = activePanel === "identity";
+  const isAnalyticsOpen = activePanel === "analytics";
 
   return (
     <>
@@ -294,6 +295,17 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               </span>
               <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">
                 DNA
+              </span>
+            </button>
+            <button
+              onClick={() => handleAction("analytics")}
+              className={`flex flex-col items-center gap-1 group transition-all ${isAnalyticsOpen ? 'text-space-gold scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              <span className="text-[14px] group-hover:scale-110 transition-transform">
+                📊
+              </span>
+              <span className="text-[7px] font-mono text-gray-500 uppercase group-hover:text-white transition-colors">
+                Analytics
               </span>
             </button>
             <button
@@ -681,6 +693,17 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/[0.03] border border-purple-500/30 transition-colors font-orbitron text-[9px] text-purple-400 uppercase tracking-wider"
             >
               <span className="text-xs">🧬</span> MY TECH DNA
+            </motion.button>
+            <motion.button
+              onClick={() => handleAction('analytics')}
+              whileHover={{
+                scale: 1.01,
+                backgroundColor: "rgba(255,215,0,0.1)",
+              }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/[0.03] border border-space-gold/20 transition-colors font-orbitron text-[9px] text-space-gold uppercase tracking-wider"
+            >
+              <span className="text-xs">📊</span> ANALYTICS
             </motion.button>
 
             {/* Action Buttons (Relocated) */}

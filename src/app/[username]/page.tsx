@@ -16,6 +16,7 @@ import { RoastPanel } from '@/components/ui/RoastPanel'
 import { HoroscopePanel } from '@/components/ui/HoroscopePanel'
 import { IdentityPanel } from '@/components/ui/IdentityPanel'
 import { DNAFingerprint } from '@/components/ui/DNAFingerprint'
+import { AnalyticsDashboard } from '@/components/ui/AnalyticsDashboard'
 import { AuthGate } from '@/components/ui/AuthGate'
 import { useUniverseStore } from '@/store'
 import { useSession } from 'next-auth/react'
@@ -200,6 +201,7 @@ export default function UniversePage() {
             {activePanel === 'share' && <ShareCard data={data} />}
             {activePanel === 'identity' && <IdentityPanel data={data} />}
             {activePanel === 'dna' && <DNAFingerprint data={data} />}
+            {activePanel === 'analytics' && <AnalyticsDashboard data={data} />}
           </AnimatePresence>
         </motion.div>
       )}
