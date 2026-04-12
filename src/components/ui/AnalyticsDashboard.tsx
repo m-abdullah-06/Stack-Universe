@@ -7,82 +7,71 @@ import type { UniverseData } from '@/types'
 interface AnalyticsDashboardProps {
   data: UniverseData
   standalone?: boolean
+  visible?: boolean // ADDED PROP
 }
 
-export function AnalyticsDashboard({ data, standalone = false }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ data, standalone = false, visible = true }: AnalyticsDashboardProps) {
   // RENDER-TIME LOG - THIS WILL SHOW EVEN IF COMPONENT CRASHES LATER
-  console.log('⚛️ AnalyticsDashboard RENDER START');
+  console.log(`[DASHBOARD] Rendering. Visible: ${visible}`);
 
   const setActivePanel = useUniverseStore(s => s.setActivePanel)
   const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
-    // THIS LOG MUST APPEAR IN THE CONSOLE
-    console.log('%c [ANALYTICS] !!! CRITICAL DIAGNOSTIC MOUNT !!! ', 'background: #ff00ff; color: white; border: 5px solid white; font-size: 20px;')
-    console.log('Data Check:', !!data)
-  }, [data])
+    if (visible) {
+      console.log('%c [ANALYTICS] MOUNTED AND VISIBLE ', 'background: #00e5ff; color: black; font-weight: bold;');
+    }
+  }, [visible])
 
   const handleClose = () => {
     if (!standalone) setActivePanel(null)
   }
 
+  // Force always rendering in DOM, but hide/show with CSS
   return (
     <div 
-      id="DEBUG_ANALYTICS_WRAPPER"
+      id="ANALYTICS_ROOT"
       style={{
+        display: visible ? 'flex' : 'none', // CSS TOGGLE
         position: 'fixed',
         top: 0,
         left: 0,
         width: '100vw',
         height: '100vh',
-        zIndex: 9999999,
-        background: 'rgba(255, 0, 255, 0.9)', // VIBRANT MAGENTA
-        display: 'flex',
+        zIndex: 999999,
+        background: 'rgba(255, 0, 255, 0.4)', // HIGH VISIBILITY
         alignItems: 'center',
         justifyContent: 'center',
-        pointerEvents: 'auto',
-        color: 'white',
-        fontFamily: 'sans-serif'
+        pointerEvents: visible ? 'auto' : 'none',
+        backdropFilter: 'blur(20px)'
       }}
       onClick={handleClose}
     >
       <div 
         style={{
-          background: 'black',
+          background: '#020205',
           padding: '40px',
           borderRadius: '30px',
-          border: '10px solid white',
-          maxWidth: '600px',
+          border: '4px solid #ff00ff',
+          maxWidth: '800px',
+          width: '90%',
           textAlign: 'center',
-          boxShadow: '0 0 100px rgba(0,0,0,1)'
+          color: 'white'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h1 style={{ fontSize: '40px', marginBottom: '20px' }}>ANALYTICS IS ALIVE</h1>
-        <p style={{ fontSize: '18px', marginBottom: '30px' }}>
-          If you see this Purple background, we have successfully bypassed the 
-          <strong> SyntaxError</strong> and the <strong>Framer Motion</strong> bug.
-        </p>
+        <h1 style={{ fontSize: '32px', marginBottom: '10px' }}>DIAGNOSTIC DASHBOARD</h1>
+        <p style={{ color: '#00e5ff', marginBottom: '20px' }}>STATUS: {visible ? 'VISIBLE' : 'HIDDEN'}</p>
         
-        <div style={{ padding: '20px', background: '#222', borderRadius: '15px', marginBottom: '30px' }}>
-            <p>Active Panel in Store: <span style={{ color: '#00e5ff' }}>ANALYTICS</span></p>
-            <p>User: @{data.username}</p>
+        <div style={{ background: 'white/5', padding: '20px', borderRadius: '15px', marginBottom: '20px' }}>
+          <p>Current Store State: <span style={{ color: '#ffd700' }}>{visible ? 'ANALYTICS' : 'NULL'}</span></p>
         </div>
 
         <button 
           onClick={handleClose}
-          style={{
-            padding: '15px 40px',
-            background: 'white',
-            color: 'black',
-            fontWeight: 'bold',
-            borderRadius: '10px',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '20px'
-          }}
+          style={{ padding: '10px 30px', background: '#ff00ff', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
         >
-          CLOSE THIS BOX
+          CLOSE
         </button>
       </div>
     </div>

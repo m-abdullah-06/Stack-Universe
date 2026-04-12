@@ -47,6 +47,9 @@ export default function UniversePage() {
 
   const loggedInLogin = (session?.user as any)?.login || session?.user?.name
 
+  // RENDER PROBE
+  console.log('[PAGE] RENDER CHECK:', { activePanel, loadReady: !!data, status });
+
   // Dedicated immediate reset effect
   useEffect(() => {
     closeAllPanels()
@@ -90,7 +93,7 @@ export default function UniversePage() {
             total_repos: json.repos.length,
             language_count: json.languages.length,
             account_age_years: json.accountAgeYears,
-            visitor_username: loggedInLogin || undefined, // USE ACTUAL LOGIN
+            visitor_username: loggedInLogin || undefined, 
             top_languages: json.languages.slice(0, 5).map((l: any) => l.name),
           }),
         }).catch(console.warn)
@@ -113,7 +116,6 @@ export default function UniversePage() {
     }
   }, [data, errorMsg])
 
-  // Once loading state is active and data arrives, switch to ready
   useEffect(() => {
     if (loadState === 'loading' && data) {
       setLoadState('ready')
@@ -130,7 +132,7 @@ export default function UniversePage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-space-black">
-      {/* STATE PROBE - DEBUG ONLY */}
+      {/* STATE PROBE */}
       <div 
         id="STATE_PROBE"
         style={{
@@ -157,7 +159,6 @@ export default function UniversePage() {
         <span>LOAD_STATE: {loadState}</span>
       </div>
 
-      {/* Cinematic entry */}
       <AnimatePresence>
         {loadState === 'cinematic' && (
           <EntryCinematic
@@ -170,7 +171,6 @@ export default function UniversePage() {
         )}
       </AnimatePresence>
 
-      {/* Loading state (data not ready yet after cinematic) */}
       {loadState === 'loading' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-20">
           <motion.div
@@ -185,7 +185,6 @@ export default function UniversePage() {
         </div>
       )}
 
-      {/* Error state */}
       {loadState === 'error' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 z-20">
           <div className="hud-panel relative rounded p-8 max-w-md text-center">
@@ -206,7 +205,6 @@ export default function UniversePage() {
         </div>
       )}
 
-      {/* Solar system scene */}
       {loadState === 'ready' && data && (
         <motion.div
           className="absolute inset-0"
@@ -220,6 +218,9 @@ export default function UniversePage() {
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
           
+          {/* Always mounted diagnostic dashboard */}
+          <AnalyticsDashboard data={data} visible={activePanel === 'analytics'} />
+
           <AnimatePresence>
             {activePanel === 'narrator' && <NarratorPanel data={data} />}
             {activePanel === 'roast' && <RoastPanel data={data} />}
@@ -229,27 +230,12 @@ export default function UniversePage() {
             {activePanel === 'share' && <ShareCard data={data} />}
             {activePanel === 'identity' && <IdentityPanel data={data} />}
             {activePanel === 'dna' && <DNAFingerprint data={data} />}
-            {activePanel === 'analytics' && (
-               <ErrorBoundary fallback={
-                 <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80">
-                   <div className="bg-red-900/50 border border-red-500 rounded-lg p-6 max-w-lg w-full">
-                     <h2 className="text-xl text-red-400 font-orbitron mb-4">Analytics Crash</h2>
-                     <p className="text-sm font-mono text-white mb-4">Please report this sequence to AI.</p>
-                     <button onClick={() => useUniverseStore.getState().setActivePanel(null)} className="px-4 py-2 bg-white/10 rounded">Close Panel</button>
-                   </div>
-                 </div>
-               }>
-                 <AnalyticsDashboard data={data} />
-               </ErrorBoundary>
-            )}
           </AnimatePresence>
         </motion.div>
       )}
 
-      {/* Scanline grid overlay */}
       <div className="absolute inset-0 grid-overlay pointer-events-none opacity-30" />
 
-      {/* Auth Gate (Uncloseable Login) */}
       <AnimatePresence>
         {showAuthGate && status === 'unauthenticated' && (
           <AuthGate />
