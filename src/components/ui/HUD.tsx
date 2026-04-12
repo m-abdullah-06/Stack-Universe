@@ -40,8 +40,14 @@ export function HUD({ data, cockpitMode = false, setCockpitMode }: HUDProps) {
       return;
     }
     
-    console.log(`[HUD] Setting active panel from ${activePanel} to ${activePanel === panel ? 'null' : panel}`);
-    setActivePanel(activePanel === panel ? null : panel);
+    const targetPanel = activePanel === panel ? null : panel;
+    console.log(`[HUD] Setting active panel from ${activePanel} to ${targetPanel}`);
+    
+    if (panel === 'analytics') {
+      window.alert(`[HUD] SIGNAL SENT: analytics`);
+    }
+
+    setActivePanel(targetPanel);
   };
 
   const isAnyPanelOpen = useIsAnyPanelOpen();

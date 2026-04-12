@@ -47,17 +47,22 @@ export default function UniversePage() {
 
   const loggedInLogin = (session?.user as any)?.login || session?.user?.name
 
-  // RENDER PROBE
-  console.log('[PAGE] RENDER CHECK:', { activePanel, loadReady: !!data, status });
+  // SCREAMING DEBUG
+  if (typeof window !== 'undefined' && activePanel === 'analytics') {
+    // We only alert once per render cycle if state is analytics
+    console.log('[PAGE] ALERTING STATE:', activePanel);
+  }
 
-  // Dedicated immediate reset effect
+  // DISABLED AUTO-RESET EFFECT TO PREVENT RACE CONDITIONS
+  /*
   useEffect(() => {
+    console.log('[PAGE] Auto-reset panels triggered for username:', username);
     closeAllPanels()
     setClaimData(null)
-    setShowAuthGate(false) // Reset gate on new page load
+    setShowAuthGate(false)
   }, [username, closeAllPanels, setClaimData, setShowAuthGate])
+  */
 
-  // Data fetching effect
   useEffect(() => {
     if (!username) return
 
@@ -82,7 +87,6 @@ export default function UniversePage() {
         setCurrentUniverse(finalData)
         setClaimData(claimJson.claim || null)
 
-        // Store in Supabase (background)
         fetch('/api/universes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -107,13 +111,9 @@ export default function UniversePage() {
   }, [username, setCurrentUniverse, loggedInLogin])
 
   const handleCinematicComplete = useCallback(() => {
-    if (data) {
-      setLoadState('ready')
-    } else if (errorMsg) {
-      setLoadState('error')
-    } else {
-      setLoadState('loading')
-    }
+    if (data) setLoadState('ready')
+    else if (errorMsg) setLoadState('error')
+    else setLoadState('loading')
   }, [data, errorMsg])
 
   useEffect(() => {
@@ -132,6 +132,14 @@ export default function UniversePage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-space-black">
+      {/* 
+         CRITICAL: DASHBOARD IS NOW AT THE ABSOLUTE TOP OF THE DOM 
+         WE BYPASS ALL OTHER CONDITIONAL BLOCKS
+      */}
+      {data && (
+        <AnalyticsDashboard data={data} visible={activePanel === 'analytics'} />
+      )}
+
       {/* STATE PROBE */}
       <div 
         id="STATE_PROBE"
@@ -140,7 +148,7 @@ export default function UniversePage() {
           top: 0,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'rgba(0, 255, 0, 0.8)',
+          background: activePanel === 'analytics' ? 'yellow' : 'rgba(0, 255, 0, 0.8)',
           color: 'black',
           padding: '4px 20px',
           zIndex: 99999999,
@@ -153,10 +161,9 @@ export default function UniversePage() {
           gap: '15px'
         }}
       >
-        <span>ACTIVE_PANEL: {activePanel || 'null'}</span>
-        <span>STATUS: {status}</span>
-        <span>DATA: {data ? 'LOADED' : 'MISSING'}</span>
-        <span>LOAD_STATE: {loadState}</span>
+        <span>STATUS_BAR: {activePanel ? `PANEL_ACTIVE: ${activePanel.toUpperCase()}` : 'IDLE'}</span>
+        <span>AUTH: {status}</span>
+        <span>LOAD: {loadState}</span>
       </div>
 
       <AnimatePresence>
@@ -188,19 +195,9 @@ export default function UniversePage() {
       {loadState === 'error' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 z-20">
           <div className="hud-panel relative rounded p-8 max-w-md text-center">
-            <p className="font-orbitron text-space-magenta text-glow-magenta text-xl mb-2">
-              UNIVERSE NOT FOUND
-            </p>
-            <p className="font-mono text-xs text-gray-500 mb-4">
-              @{username} does not appear to exist in this dimension.
-            </p>
+            <h2 className="font-orbitron text-space-magenta text-xl mb-2">ERROR</h2>
             <p className="font-mono text-xs text-gray-700 mb-6">{errorMsg}</p>
-            <button
-              onClick={() => router.push('/')}
-              className="font-mono text-xs text-space-cyan hover:text-white transition-colors tracking-widest"
-            >
-              ← RETURN TO MULTIVERSE
-            </button>
+            <button onClick={() => router.push('/')} className="text-space-cyan">RETURN</button>
           </div>
         </div>
       )}
@@ -210,7 +207,6 @@ export default function UniversePage() {
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
         >
           <SolarSystemScene data={data} />
           <HUD data={data} />
@@ -218,9 +214,6 @@ export default function UniversePage() {
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
           
-          {/* Always mounted diagnostic dashboard */}
-          <AnalyticsDashboard data={data} visible={activePanel === 'analytics'} />
-
           <AnimatePresence>
             {activePanel === 'narrator' && <NarratorPanel data={data} />}
             {activePanel === 'roast' && <RoastPanel data={data} />}
@@ -235,12 +228,7 @@ export default function UniversePage() {
       )}
 
       <div className="absolute inset-0 grid-overlay pointer-events-none opacity-30" />
-
-      <AnimatePresence>
-        {showAuthGate && status === 'unauthenticated' && (
-          <AuthGate />
-        )}
-      </AnimatePresence>
+      <AnimatePresence>{showAuthGate && status === 'unauthenticated' && <AuthGate />}</AnimatePresence>
     </div>
   )
 }
