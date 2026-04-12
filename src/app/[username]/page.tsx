@@ -205,16 +205,17 @@ export default function UniversePage() {
           </AnimatePresence>
 
           {activePanel === 'analytics' && (
-            <div className="fixed top-0 left-0 w-full h-full z-[99999] bg-pink-600/90 flex flex-col items-center justify-center pointer-events-auto">
-              <h1 className="text-white text-4xl font-bold mb-8">DEBUG OUTSIDE ANIMATE: MOUNTED</h1>
-              <h2 className="text-white text-xl mb-8">activePanel: {activePanel}</h2>
-              <button 
-                onClick={() => useUniverseStore.getState().setActivePanel(null)}
-                className="px-8 py-4 bg-white text-pink-600 font-bold rounded-xl text-xl"
-              >
-                CLOSE
-              </button>
-            </div>
+             <ErrorBoundary fallback={
+               <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80">
+                 <div className="bg-red-900/50 border border-red-500 rounded-lg p-6 max-w-lg w-full">
+                   <h2 className="text-xl text-red-400 font-orbitron mb-4">Analytics Crash</h2>
+                   <p className="text-sm font-mono text-white mb-4">Please report this sequence to AI.</p>
+                   <button onClick={() => useUniverseStore.getState().setActivePanel(null)} className="px-4 py-2 bg-white/10 rounded">Close Panel</button>
+                 </div>
+               </div>
+             }>
+               <AnalyticsDashboard data={data} />
+             </ErrorBoundary>
           )}
         </motion.div>
       )}
