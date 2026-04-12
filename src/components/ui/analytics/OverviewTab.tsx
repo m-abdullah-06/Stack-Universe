@@ -18,15 +18,22 @@ export function OverviewTab({ data }: OverviewTabProps) {
     const starsContrib = data.totalStars * 10
     const reposContrib = data.repos.length * 5
     const langsContrib = data.languages.length * 20
-    const ageContrib = Math.floor(data.accountAgeYears) * 15
+    const ageContrib = Math.round(data.accountAgeYears * 15)
     const total = starsContrib + reposContrib + langsContrib + ageContrib
 
     return [
-      { name: 'Stars', value: starsContrib, pct: total > 0 ? (starsContrib / total * 100) : 0, color: '#ffd700' },
-      { name: 'Repos', value: reposContrib, pct: total > 0 ? (reposContrib / total * 100) : 0, color: '#00e5ff' },
-      { name: 'Languages', value: langsContrib, pct: total > 0 ? (langsContrib / total * 100) : 0, color: '#7b2fff' },
-      { name: 'Account Age', value: ageContrib, pct: total > 0 ? (ageContrib / total * 100) : 0, color: '#ff006e' },
-    ]
+      { name: 'Stars', value: starsContrib, color: '#ffd700' },
+      { name: 'Repos', value: reposContrib, color: '#00e5ff' },
+      { name: 'Languages', value: langsContrib, color: '#7b2fff' },
+      { name: 'Account Age', value: ageContrib, color: '#ff006e' },
+    ].map(stat => {
+      let pctStr = '0.0%'
+      if (total > 0 && stat.value > 0) {
+        const pct = (stat.value / total) * 100
+        pctStr = pct < 0.1 ? '<0.1%' : `${pct.toFixed(1)}%`
+      }
+      return { ...stat, pct: total > 0 ? (stat.value / total * 100) : 0, pctStr }
+    })
   }, [data])
 
   // System health — average of all repo health scores
@@ -108,11 +115,15 @@ export function OverviewTab({ data }: OverviewTabProps) {
                 />
               </RadialBarChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-orbitron font-black text-3xl text-space-gold text-glow-gold">
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+              <span 
+                className={`font-orbitron font-black text-space-gold text-glow-gold ${
+                  data.universeScore.toLocaleString().length > 7 ? 'text-2xl' : 'text-3xl'
+                }`}
+              >
                 {data.universeScore.toLocaleString()}
               </span>
-              <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest mt-1">
+              <span className="text-[8px] font-mono text-gray-500 uppercase tracking-widest mt-1 text-center leading-tight whitespace-normal max-w-[80%]">
                 {data.distanceLabel}
               </span>
             </div>
@@ -165,7 +176,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
             >
               {/* Tooltip on hover */}
               <div className="absolute -top-10 left-1/2 -translate-x-1/2 hidden group-hover:block bg-black/90 border border-white/10 rounded-lg px-2 py-1 whitespace-nowrap z-10">
-                <span className="text-[9px] font-mono text-white">{seg.name}: {seg.pct.toFixed(1)}%</span>
+                <span className="text-[9px] font-mono text-white">{seg.name}: {seg.pctStr}</span>
               </div>
             </div>
           ))}
@@ -173,15 +184,15 @@ export function OverviewTab({ data }: OverviewTabProps) {
 
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mt-4">
-          {breakdown.map(seg => (
-            <div key={seg.name} className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: seg.color }} />
-              <span className="text-[10px] font-mono text-gray-400">
-                {seg.name} — <span className="text-white font-bold">{seg.pct.toFixed(1)}%</span>
-                <span className="text-gray-600 ml-1">({seg.value.toLocaleString()} pts)</span>
-              </span>
-            </div>
-          ))}
+            {breakdown.map((b) => (
+              <div key={b.name} className="flex items-center gap-1.5 text-[10px] font-mono" style={{ color: b.color }}>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: b.color }} />
+                <span>{b.name}</span>
+                <span className="text-gray-400">—</span>
+                <span className="text-white">{b.pctStr}</span>
+                <span className="text-gray-500">({b.value.toLocaleString()} pts)</span>
+              </div>
+            ))}
         </div>
       </div>
     </div>

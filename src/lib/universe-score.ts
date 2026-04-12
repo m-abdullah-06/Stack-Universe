@@ -10,7 +10,7 @@ export function calculateUniverseScore(
     totalStars * 10 +
     totalRepos * 5 +
     languageCount * 20 +
-    Math.floor(accountAgeYears) * 15
+    Math.round(accountAgeYears * 15)
   )
 }
 
