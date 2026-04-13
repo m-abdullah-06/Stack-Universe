@@ -62,7 +62,7 @@ export function IdentityPanel({ data }: IdentityPanelProps) {
       className="fixed inset-0 z-[450] flex items-center justify-center p-6 bg-space-dark/40 backdrop-blur-xl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: "none" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) setActivePanel(null);
       }}
@@ -71,7 +71,7 @@ export function IdentityPanel({ data }: IdentityPanelProps) {
         className="w-full max-w-2xl bg-black/90 border border-space-cyan/30 rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,229,255,0.15)] relative"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
+        exit={{ scale: 0.9, y: 20, opacity: 0, pointerEvents: "none" }}
       >
         {/* Header */}
         <div className="p-5 md:p-8 border-b border-white/5 relative bg-gradient-to-b from-space-cyan/5 to-transparent">

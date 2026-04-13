@@ -58,14 +58,14 @@ export function HoroscopePanel({ data }: HoroscopePanelProps) {
       className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-6 bg-purple-950/10 backdrop-blur-md"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: 'none' }}
       onClick={(e) => { if (e.target === e.currentTarget) setActivePanel(null) }}
     >
       <motion.div
         className="w-full max-w-xl max-h-[85vh] overflow-y-auto bg-black/90 backdrop-blur-2xl border border-purple-500/30 rounded-t-3xl md:rounded-3xl p-6 md:p-10 shadow-[0_0_100px_rgba(168,85,247,0.2)] relative overflow-x-hidden text-center"
         initial={{ scale: 0.9, y: 30 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 30 }}
+        exit={{ scale: 0.9, y: 30, opacity: 0, pointerEvents: 'none' }}
       >
         {/* Cosmic background particles */}
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">

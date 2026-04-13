@@ -225,20 +225,17 @@ export default function UniverseClient() {
 
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
-          <AnimatePresence>
-            {activePanel === 'narrator' && <NarratorPanel data={data} />}
-            {activePanel === 'roast' && <RoastPanel data={data} />}
-            {activePanel === 'horoscope' && <HoroscopePanel data={data} />}
-            {activePanel === 'identity' && <IdentityPanel data={data} />}
-            {activePanel === 'customise' && <CustomisePanel data={data} />}
-            {activePanel === 'giants' && <HallOfGiants />}
-            {activePanel === 'share' && <ShareCard data={data} />}
-            {activePanel === 'dna' && <DNAFingerprint data={data} />}
-            {activePanel === 'analytics' && <AnalyticsDashboard data={data} />}
+          <AnimatePresence mode="wait">
+            {activePanel === 'narrator' && <NarratorPanel key="narrator" data={data} />}
+            {activePanel === 'roast' && <RoastPanel key="roast" data={data} />}
+            {activePanel === 'horoscope' && <HoroscopePanel key="horoscope" data={data} />}
+            {activePanel === 'identity' && <IdentityPanel key="identity" data={data} />}
+            {activePanel === 'customise' && <CustomisePanel key="customise" data={data} />}
+            {activePanel === 'giants' && <HallOfGiants key="giants" />}
+            {activePanel === 'share' && <ShareCard key="share" data={data} />}
+            {activePanel === 'dna' && <DNAFingerprint key="dna" data={data} />}
+            {activePanel === 'analytics' && <AnalyticsDashboard key="analytics" data={data} />}
           </AnimatePresence>
-          {cockpitMode && (
-            <CockpitOverlay data={data} onExit={() => setCockpitMode(false)} />
-          )}
         </motion.div>
       )}
 

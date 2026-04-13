@@ -193,17 +193,17 @@ export default function UniversePage() {
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
           
-          <AnimatePresence>
-            {activePanel === 'narrator' && <NarratorPanel data={data} />}
-            {activePanel === 'roast' && <RoastPanel data={data} />}
-            {activePanel === 'horoscope' && <HoroscopePanel data={data} />}
-            {activePanel === 'customise' && <CustomisePanel data={data} />}
-            {activePanel === 'giants' && <HallOfGiants />}
-            {activePanel === 'share' && <ShareCard data={data} />}
-            {activePanel === 'identity' && <IdentityPanel data={data} />}
-            {activePanel === 'dna' && <DNAFingerprint data={data} />}
+          <AnimatePresence mode="wait">
+            {activePanel === 'narrator' && <NarratorPanel key="narrator" data={data} />}
+            {activePanel === 'roast' && <RoastPanel key="roast" data={data} />}
+            {activePanel === 'horoscope' && <HoroscopePanel key="horoscope" data={data} />}
+            {activePanel === 'customise' && <CustomisePanel key="customise" data={data} />}
+            {activePanel === 'giants' && <HallOfGiants key="giants" />}
+            {activePanel === 'share' && <ShareCard key="share" data={data} />}
+            {activePanel === 'identity' && <IdentityPanel key="identity" data={data} />}
+            {activePanel === 'dna' && <DNAFingerprint key="dna" data={data} />}
             {activePanel === 'analytics' && (
-               <ErrorBoundary fallback={
+               <ErrorBoundary key="analytics-boundary" fallback={
                  <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80">
                    <div className="bg-red-900/50 border border-red-500 rounded-lg p-6 max-w-lg w-full">
                      <h2 className="text-xl text-red-400 font-orbitron mb-4">Analytics Crash</h2>

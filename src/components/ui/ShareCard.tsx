@@ -67,13 +67,14 @@ export function ShareCard({ data }: ShareCardProps) {
       className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: 'none' }}
       onClick={() => setActivePanel(null)}
     >
       <motion.div
         className="flex flex-col items-center gap-3 w-full max-w-sm px-4 md:px-0 max-h-[80vh]"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20, opacity: 0, pointerEvents: 'none' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scrollable Container */}

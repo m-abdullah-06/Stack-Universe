@@ -178,9 +178,7 @@ export function DNAFingerprint({ data }: DNAFingerprintProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: 'none' }}
       style={{ pointerEvents: 'auto' }}
       className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-8 bg-black/95 backdrop-blur-2xl"
       onClick={() => setActivePanel(null)}
@@ -188,7 +186,7 @@ export function DNAFingerprint({ data }: DNAFingerprintProps) {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        exit={{ scale: 0.9, opacity: 0, pointerEvents: 'none' }}
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-4xl h-full max-h-[85vh] flex flex-col items-center bg-black border border-white/20 rounded-3xl overflow-hidden shadow-2xl"
       >

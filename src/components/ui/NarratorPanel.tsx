@@ -75,14 +75,14 @@ export function NarratorPanel({ data }: NarratorPanelProps) {
       className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-6 bg-black/40 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: 'none' }}
       onClick={(e) => { if (e.target === e.currentTarget) setActivePanel(null) }}
     >
       <motion.div
         className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-black/80 backdrop-blur-2xl border border-white/10 rounded-t-3xl md:rounded-3xl p-5 md:p-8 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative overflow-x-hidden"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
+        exit={{ scale: 0.9, y: 20, opacity: 0, pointerEvents: 'none' }}
       >
         {/* Decorative background grid */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 

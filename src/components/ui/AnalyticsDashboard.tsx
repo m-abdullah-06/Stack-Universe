@@ -191,14 +191,14 @@ export function AnalyticsDashboard({ data, standalone = false }: AnalyticsDashbo
       className="fixed inset-0 z-[400] flex items-center justify-center p-2 md:p-6 bg-black/60 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: 'none' }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
     >
       <motion.div
         className="w-full max-w-6xl h-[92vh] md:h-[88vh] bg-[#020205]/95 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.8)] relative flex flex-col overflow-hidden"
         initial={{ scale: 0.92, y: 30, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.92, y: 30, opacity: 0 }}
+        exit={{ scale: 0.92, y: 30, opacity: 0, pointerEvents: 'none' }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
       >
