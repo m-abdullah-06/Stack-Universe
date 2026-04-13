@@ -225,7 +225,7 @@ export default function UniverseClient() {
 
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {activePanel === 'narrator' && <NarratorPanel key="narrator" data={data} />}
             {activePanel === 'roast' && <RoastPanel key="roast" data={data} />}
             {activePanel === 'horoscope' && <HoroscopePanel key="horoscope" data={data} />}

@@ -11,6 +11,7 @@ import { ActivityTab } from './analytics/ActivityTab'
 import { LanguagesTab } from './analytics/LanguagesTab'
 import { CICDTab } from './analytics/CICDTab'
 import { GrowthTab } from './analytics/GrowthTab'
+import { ErrorBoundary } from './ErrorBoundary'
 
 interface AnalyticsDashboardProps {
   data: UniverseData
@@ -202,24 +203,32 @@ export function AnalyticsDashboard({ data, standalone = false }: AnalyticsDashbo
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Decorative accents */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-space-cyan/5 blur-[80px] rounded-full -mr-24 -mt-24 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-space-magenta/5 blur-[80px] rounded-full -ml-24 -mb-24 pointer-events-none" />
+        <ErrorBoundary fallback={
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#020205]">
+            <h2 className="text-xl text-red-400 font-orbitron mb-4 uppercase tracking-widest">Neural Sync Interrupted</h2>
+            <p className="text-sm font-mono text-gray-500 mb-6 max-w-md">The analytics matrix encountered a critical synchronization error. Diagnostic logs have been telemetry-linked.</p>
+            <button onClick={handleClose} className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-mono text-white hover:bg-white/10">Abort and Return</button>
+          </div>
+        }>
+          {/* Decorative accents */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-space-cyan/5 blur-[80px] rounded-full -mr-24 -mt-24 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-space-magenta/5 blur-[80px] rounded-full -ml-24 -mb-24 pointer-events-none" />
 
-        {/* Header */}
-        {renderHeader()}
+          {/* Header */}
+          {renderHeader()}
 
-        {/* Tabs */}
-        {renderTabs()}
+          {/* Tabs */}
+          {renderTabs()}
 
-        {/* Scrollable Content */}
-        <div
-          ref={contentRef}
-          className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 scrollbar-thin scrollbar-thumb-white/10"
-          style={{ backgroundColor: '#020205' }}
-        >
-          {renderTab()}
-        </div>
+          {/* Scrollable Content */}
+          <div
+            ref={contentRef}
+            className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 scrollbar-thin scrollbar-thumb-white/10"
+            style={{ backgroundColor: '#020205' }}
+          >
+            {renderTab()}
+          </div>
+        </ErrorBoundary>
       </motion.div>
     </motion.div>
   )

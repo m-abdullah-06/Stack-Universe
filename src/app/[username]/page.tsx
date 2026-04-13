@@ -193,7 +193,7 @@ export default function UniversePage() {
           <UniverseIntelligencePanel data={data} visible={loadState === 'ready'} />
           <RepoSummaryHUD />
           
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {activePanel === 'narrator' && <NarratorPanel key="narrator" data={data} />}
             {activePanel === 'roast' && <RoastPanel key="roast" data={data} />}
             {activePanel === 'horoscope' && <HoroscopePanel key="horoscope" data={data} />}
@@ -202,19 +202,7 @@ export default function UniversePage() {
             {activePanel === 'share' && <ShareCard key="share" data={data} />}
             {activePanel === 'identity' && <IdentityPanel key="identity" data={data} />}
             {activePanel === 'dna' && <DNAFingerprint key="dna" data={data} />}
-            {activePanel === 'analytics' && (
-               <ErrorBoundary key="analytics-boundary" fallback={
-                 <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80">
-                   <div className="bg-red-900/50 border border-red-500 rounded-lg p-6 max-w-lg w-full">
-                     <h2 className="text-xl text-red-400 font-orbitron mb-4">Analytics Crash</h2>
-                     <p className="text-sm font-mono text-white mb-4">Please report this sequence to AI.</p>
-                     <button onClick={() => useUniverseStore.getState().setActivePanel(null)} className="px-4 py-2 bg-white/10 rounded">Close Panel</button>
-                   </div>
-                 </div>
-               }>
-                 <AnalyticsDashboard data={data} />
-               </ErrorBoundary>
-            )}
+            {activePanel === 'analytics' && <AnalyticsDashboard key="analytics" data={data} />}
           </AnimatePresence>
         </motion.div>
       )}
