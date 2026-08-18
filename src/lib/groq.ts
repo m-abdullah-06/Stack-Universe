@@ -6,7 +6,7 @@ const groq = new Groq({
 
 /**
  * Shared helper for Groq AI interactions.
- * Uses llama3-70b-8192 model.
+ * Uses qwen/qwen3.6-27b model.
  */
 export async function getGroqCompletion(prompt: string, temp = 0.7) {
   if (!process.env.GROQ_API_KEY) {
@@ -17,7 +17,7 @@ export async function getGroqCompletion(prompt: string, temp = 0.7) {
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
+      model: "qwen/qwen3.6-27b",
       temperature: temp,
     });
 
