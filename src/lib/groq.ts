@@ -17,7 +17,7 @@ export async function getGroqCompletion(prompt: string, temp = 0.7) {
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "qwen/qwen3.6-27b",
+      model: "openai/gpt-oss-120b",
       temperature: temp,
     });
 
