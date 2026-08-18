@@ -21,7 +21,8 @@ export async function getGroqCompletion(prompt: string, temp = 0.7) {
       temperature: temp,
     });
 
-    return chatCompletion.choices[0]?.message?.content || "";
+  const raw = chatCompletion.choices[0]?.message?.content || "";
+  return raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
   } catch (error) {
     console.error("Groq AI Error:", error);
     return "";
