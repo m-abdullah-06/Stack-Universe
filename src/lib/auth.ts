@@ -6,6 +6,7 @@ export const authOptions = {
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
       allowDangerousEmailAccountLinking: true,
+      checks: ["none"],
       profile(profile) {
         return {
           id: profile.id.toString(),
